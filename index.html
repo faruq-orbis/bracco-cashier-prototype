@@ -1,0 +1,2064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Bracco Cashier — Interactive Prototype</title>
+<style>
+  :root {
+    --bg: #0D0D0D;
+    --surface: #1A1A1A;
+    --surface2: #242424;
+    --border: #2E2E2E;
+    --gold: #C9A227;
+    --gold-light: #E8C347;
+    --text: #F5F5F5;
+    --subtext: #9CA3AF;
+    --success: #22C55E;
+    --error: #EF4444;
+    --warning: #F59E0B;
+    --pending: #60A5FA;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── Outer shell ── */
+  .outer {
+    width: 100%;
+    max-width: 900px;
+    padding: 24px 16px 40px;
+  }
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--gold); }
+  .logo span { color: var(--text); }
+  .badge { background: #2A2A2A; color: var(--subtext); font-size: 11px; padding: 4px 10px; border-radius: 20px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+  /* ── Flow tabs ── */
+  .flow-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .flow-tab {
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--subtext);
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .flow-tab.active {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #000;
+    font-weight: 700;
+  }
+  .flow-tab:hover:not(.active) { border-color: var(--gold); color: var(--text); }
+
+  /* ── Phone shell ── */
+  .phone-shell {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 32px;
+    width: 375px;
+    min-height: 720px;
+    margin: 0 auto;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+  }
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 24px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+  .status-bar .notch { font-size: 13px; font-weight: 700; }
+
+  /* ── Nav bar ── */
+  .nav-bar {
+    display: flex;
+    align-items: center;
+    padding: 8px 20px 12px;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .nav-back { background: var(--surface2); border: none; color: var(--text); width: 34px; height: 34px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .nav-back:hover { background: var(--surface); }
+  .nav-title { font-weight: 700; font-size: 17px; flex: 1; }
+
+  /* ── Step indicator ── */
+  .step-indicator {
+    display: flex;
+    gap: 6px;
+    padding: 0 20px 16px;
+    flex-shrink: 0;
+  }
+  .step-dot {
+    height: 3px;
+    border-radius: 2px;
+    background: var(--border);
+    flex: 1;
+    transition: background 0.2s;
+  }
+  .step-dot.active { background: var(--gold); }
+  .step-dot.done { background: var(--gold); opacity: 0.4; }
+
+  /* ── Screen content ── */
+  .screen { display: none; flex: 1; flex-direction: column; overflow-y: auto; }
+  .screen.visible { display: flex; }
+  .screen-body { padding: 0 20px; flex: 1; display: flex; flex-direction: column; }
+
+  /* ── Cards ── */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; cursor: pointer; transition: all 0.15s; }
+  .card:hover { border-color: var(--gold); }
+  .card.selected { border-color: var(--gold); background: rgba(201,162,39,0.08); }
+  .card-row { display: flex; align-items: center; justify-content: space-between; }
+  .card-label { font-size: 11px; color: var(--subtext); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .card-amount { font-size: 26px; font-weight: 800; color: var(--text); }
+  .card-sub { font-size: 12px; color: var(--subtext); margin-top: 4px; }
+  .card-bonus-tag { background: rgba(201,162,39,0.15); color: var(--gold); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 10px; white-space: nowrap; }
+  .popular-tag { background: rgba(96,165,250,0.15); color: var(--pending); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-bottom: 8px; display: inline-block; }
+
+  /* ── Package card ── */
+  .package-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; position: relative; }
+  .package-card:hover { border-color: var(--gold); }
+  .package-card.selected { border-color: var(--gold); background: rgba(201,162,39,0.06); }
+  .package-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .package-price { font-size: 24px; font-weight: 800; }
+  .package-contents { display: flex; gap: 12px; margin-top: 10px; }
+  .package-pill { background: var(--surface2); border-radius: 8px; padding: 6px 10px; flex: 1; text-align: center; }
+  .package-pill-label { font-size: 10px; color: var(--subtext); display: block; }
+  .package-pill-value { font-size: 13px; font-weight: 700; display: block; margin-top: 2px; }
+
+  /* ── Promo option ── */
+  .promo-option { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; }
+  .promo-option:hover { border-color: var(--gold); }
+  .promo-option.selected { border-color: var(--gold); background: rgba(201,162,39,0.06); }
+  .promo-venue { font-size: 11px; color: var(--subtext); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .promo-amount { font-size: 20px; font-weight: 800; color: var(--gold); }
+  .promo-rollover { font-size: 12px; color: var(--subtext); margin-top: 4px; }
+  .radio { width: 20px; height: 20px; border: 2px solid var(--border); border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .radio.checked { border-color: var(--gold); }
+  .radio.checked::after { content: ''; width: 10px; height: 10px; background: var(--gold); border-radius: 50%; }
+
+  /* ── CTA button ── */
+  .cta { width: 100%; padding: 16px; background: var(--gold); color: #000; border: none; border-radius: var(--radius); font-size: 16px; font-weight: 800; cursor: pointer; margin-top: auto; transition: all 0.15s; letter-spacing: 0.2px; }
+  .cta:hover { background: var(--gold-light); }
+  .cta:disabled { background: var(--border); color: var(--subtext); cursor: not-allowed; }
+  .cta-secondary { width: 100%; padding: 14px; background: transparent; color: var(--text); border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px; transition: all 0.15s; }
+  .cta-secondary:hover { border-color: var(--gold); color: var(--gold); }
+  .cta-success { background: var(--success); }
+  .cta-error { background: var(--error); }
+
+  /* ── Result screens ── */
+  .result-icon { font-size: 64px; text-align: center; margin: 32px 0 20px; }
+  .result-title { font-size: 24px; font-weight: 800; text-align: center; margin-bottom: 12px; line-height: 1.2; }
+  .result-body { font-size: 15px; color: var(--subtext); text-align: center; line-height: 1.6; margin-bottom: 28px; }
+  .result-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 24px; }
+  .result-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .result-row:last-child { border-bottom: none; }
+  .result-row-label { font-size: 13px; color: var(--subtext); }
+  .result-row-value { font-size: 13px; font-weight: 600; }
+
+  /* ── Iframe placeholder ── */
+  .iframe-placeholder { background: var(--surface2); border: 1px dashed var(--border); border-radius: var(--radius); flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; margin: 0 20px 20px; min-height: 420px; }
+  .iframe-logo { font-size: 28px; font-weight: 800; color: #4DB6FF; letter-spacing: -1px; }
+  .iframe-label { font-size: 13px; color: var(--subtext); text-align: center; }
+  .loading-dots { display: flex; gap: 6px; }
+  .loading-dot { width: 8px; height: 8px; background: var(--gold); border-radius: 50%; animation: bounce 1.2s infinite; }
+  .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,80%,100% { transform: scale(0.7); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
+  @keyframes kycSpin { to { transform: rotate(360deg); } }
+  @keyframes kycPop { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+  /* ── Amount input ── */
+  .amount-input-wrap { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .amount-input-wrap.focused { border-color: var(--gold); }
+  .currency-sign { font-size: 28px; font-weight: 800; color: var(--subtext); }
+  .amount-input { background: none; border: none; outline: none; font-size: 40px; font-weight: 800; color: var(--text); width: 100%; font-family: inherit; }
+  .amount-hint { font-size: 12px; color: var(--subtext); margin-bottom: 20px; }
+  .amount-hint.error { color: var(--error); }
+
+  /* ── Balance chip ── */
+  .balance-chip { background: rgba(201,162,39,0.1); border: 1px solid rgba(201,162,39,0.3); border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; }
+  .balance-label { font-size: 11px; color: var(--gold); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .balance-amount { font-size: 22px; font-weight: 800; }
+
+  /* ── Payment method ── */
+  .payment-method { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; }
+  .payment-method:hover { border-color: var(--gold); }
+  .payment-method.selected { border-color: var(--gold); background: rgba(201,162,39,0.06); }
+  .pm-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .pm-info { flex: 1; }
+  .pm-name { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+  .pm-sub { font-size: 12px; color: var(--subtext); }
+  .pm-arrow { color: var(--subtext); font-size: 16px; }
+
+  /* ── Crypto screen ── */
+  .qr-box { background: white; border-radius: var(--radius); padding: 16px; width: 160px; height: 160px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; }
+  .qr-grid { display: grid; grid-template-columns: repeat(10,1fr); gap: 2px; width: 100%; height: 100%; }
+  .qr-cell { border-radius: 1px; }
+  .address-box { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .address-text { font-size: 12px; font-family: monospace; color: var(--subtext); word-break: break-all; }
+  .copy-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; flex-shrink: 0; transition: all 0.15s; }
+  .copy-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .crypto-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .crypto-tab { flex: 1; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; color: var(--subtext); }
+  .crypto-tab.active { background: rgba(201,162,39,0.1); border-color: var(--gold); color: var(--gold); }
+
+  /* ── Ineligible state ── */
+  .ineligible-banner { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 16px; }
+  .ineligible-title { font-size: 13px; font-weight: 700; color: var(--error); margin-bottom: 4px; }
+  .ineligible-body { font-size: 12px; color: var(--subtext); line-height: 1.5; }
+  .progress-bar-wrap { background: var(--surface2); border-radius: 4px; height: 6px; margin-top: 10px; overflow: hidden; }
+  .progress-bar { height: 100%; background: var(--gold); border-radius: 4px; width: 65%; }
+
+  /* ── Flowchart ── */
+  .flowchart-section { padding: 0 20px 20px; }
+  .flow-title { font-size: 16px; font-weight: 800; margin-bottom: 16px; color: var(--gold); }
+  .flow-diagram { display: flex; flex-direction: column; align-items: center; gap: 0; }
+  .flow-node { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 10px 16px; font-size: 12px; font-weight: 600; text-align: center; width: 100%; max-width: 280px; position: relative; }
+  .flow-node.start { background: rgba(201,162,39,0.12); border-color: var(--gold); color: var(--gold); }
+  .flow-node.decision { background: rgba(96,165,250,0.08); border-color: var(--pending); color: var(--pending); border-radius: 4px; transform: rotate(0deg); }
+  .flow-node.success-node { background: rgba(34,197,94,0.08); border-color: var(--success); color: var(--success); }
+  .flow-node.error-node { background: rgba(239,68,68,0.08); border-color: var(--error); color: var(--error); }
+  .flow-node.pending-node { background: rgba(245,158,11,0.08); border-color: var(--warning); color: var(--warning); }
+  .flow-arrow { display: flex; flex-direction: column; align-items: center; gap: 0; margin: 2px 0; }
+  .flow-line { width: 2px; height: 20px; background: var(--border); }
+  .flow-arrow-head { border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid var(--border); }
+  .flow-label { font-size: 10px; color: var(--subtext); margin: 2px 0; }
+  .flow-branch { display: flex; gap: 16px; width: 100%; justify-content: center; align-items: flex-start; }
+  .flow-branch-col { display: flex; flex-direction: column; align-items: center; gap: 0; flex: 1; }
+  .flow-branch-label { font-size: 10px; color: var(--subtext); margin-bottom: 4px; font-weight: 600; }
+
+  /* ── Misc utils ── */
+  .section-label { font-size: 11px; color: var(--subtext); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .spacer { height: 16px; }
+  .bottom-pad { height: 24px; }
+  .inline-error { font-size: 12px; color: var(--error); margin-top: 6px; display: none; }
+  .inline-error.visible { display: block; }
+
+  /* ── Flowchart outer ── */
+  .flowchart-outer { padding: 20px; }
+  .flow-tabs-inner { display: flex; gap: 8px; margin-bottom: 20px; }
+  .flow-tab-inner { flex: 1; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--subtext); transition: all 0.15s; }
+  .flow-tab-inner.active { background: rgba(201,162,39,0.1); border-color: var(--gold); color: var(--gold); }
+
+  /* Transaction history */
+  .tx-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .tx-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .tx-icon.deposit { background: rgba(34,197,94,0.1); }
+  .tx-icon.pending-tx { background: rgba(245,158,11,0.1); }
+  .tx-icon.failed-tx { background: rgba(239,68,68,0.1); }
+  .tx-info { flex: 1; }
+  .tx-name { font-size: 14px; font-weight: 600; }
+  .tx-date { font-size: 11px; color: var(--subtext); margin-top: 2px; }
+  .tx-amount { text-align: right; }
+  .tx-amount-val { font-size: 14px; font-weight: 700; }
+  .tx-status { font-size: 11px; margin-top: 2px; }
+  .tx-status.settled { color: var(--success); }
+  .tx-status.pending-s { color: var(--warning); }
+  .tx-status.failed-s { color: var(--error); }
+  .tx-status.available { color: var(--pending); }
+</style>
+</head>
+<body>
+
+<div class="outer">
+  <div class="header">
+    <div class="logo">Bra<span>cc</span>o</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="badge">Cashier — Breeze Integration</span>
+      <span class="badge" style="color:var(--gold)">Prototype v1</span>
+    </div>
+  </div>
+
+  <!-- Flow tabs -->
+  <div class="flow-tabs">
+    <button class="flow-tab active" onclick="showFlow('payin-v1')">V1 · Payin</button>
+    <button class="flow-tab" onclick="showFlow('payout-v1')">V1 · Payout</button>
+    <button class="flow-tab" onclick="showFlow('payin-v2')">V2 · Payin</button>
+    <button class="flow-tab" onclick="showFlow('account')">Account History</button>
+    <button class="flow-tab" onclick="showFlow('admin')">Admin · PAM</button>
+    <button class="flow-tab" onclick="showFlow('flowchart')">Flowcharts</button>
+  </div>
+
+  <!-- Phone shell -->
+  <div class="phone-shell">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span class="notch">Bracco</span>
+      <span>●●●</span>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         PAYIN V1 FLOW
+    ═══════════════════════════════════════════ -->
+
+    <!-- Screen: Package Selection -->
+    <div class="screen visible" id="screen-payin-v1-1">
+      <div class="nav-bar">
+        <div class="nav-title">Select Package</div>
+      </div>
+      <div class="step-indicator">
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+      </div>
+      <div class="screen-body">
+
+        <div class="package-card" onclick="selectPackage(this, false)">
+          <div class="package-top">
+            <div><div class="package-price">$10</div></div>
+          </div>
+          <div class="package-contents">
+            <div class="package-pill">
+              <span class="package-pill-label">Bracco Cash</span>
+              <span class="package-pill-value">$10</span>
+            </div>
+            <div class="package-pill">
+              <span class="package-pill-label">Coins</span>
+              <span class="package-pill-value">10,000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="package-card" onclick="selectPackage(this, false)">
+          <div class="package-top">
+            <div><div class="package-price">$25</div></div>
+          </div>
+          <div class="package-contents">
+            <div class="package-pill">
+              <span class="package-pill-label">Bracco Cash</span>
+              <span class="package-pill-value">$25</span>
+            </div>
+            <div class="package-pill">
+              <span class="package-pill-label">Coins</span>
+              <span class="package-pill-value">25,000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="package-card" onclick="selectPackage(this, true)">
+          <div class="package-top">
+            <div><div class="package-price">$50</div></div>
+            <span class="card-bonus-tag">+ Bonus</span>
+          </div>
+          <div class="package-contents">
+            <div class="package-pill">
+              <span class="package-pill-label">Bracco Cash</span>
+              <span class="package-pill-value">$50</span>
+            </div>
+            <div class="package-pill">
+              <span class="package-pill-label">Coins</span>
+              <span class="package-pill-value">50,000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="package-card" onclick="selectPackage(this, true)">
+          <div class="package-top">
+            <div><div class="package-price">$100</div></div>
+            <span class="card-bonus-tag">+ Bonus</span>
+          </div>
+          <div class="package-contents">
+            <div class="package-pill">
+              <span class="package-pill-label">Bracco Cash</span>
+              <span class="package-pill-value">$100</span>
+            </div>
+            <div class="package-pill">
+              <span class="package-pill-label">Coins</span>
+              <span class="package-pill-value">100,000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="package-card" onclick="selectPackage(this, true)">
+          <div class="package-top">
+            <div><div class="package-price">$250</div></div>
+            <span class="card-bonus-tag">+ Bonus</span>
+          </div>
+          <div class="package-contents">
+            <div class="package-pill">
+              <span class="package-pill-label">Bracco Cash</span>
+              <span class="package-pill-value">$250</span>
+            </div>
+            <div class="package-pill">
+              <span class="package-pill-label">Coins</span>
+              <span class="package-pill-value">250,000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="package-card" id="pkg-500-card" onclick="selectPackageTop(this)">
+          <div class="package-top">
+            <div><div class="package-price">$500+</div></div>
+            <span class="card-bonus-tag">+ Bonus</span>
+          </div>
+          <div class="package-contents">
+            <div class="package-pill">
+              <span class="package-pill-label">Bracco Cash</span>
+              <span class="package-pill-value">$500+</span>
+            </div>
+            <div class="package-pill">
+              <span class="package-pill-label">Coins</span>
+              <span class="package-pill-value">500,000+</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- $500+ expand panel -->
+        <div id="pkg-500-expand" style="display:none;background:rgba(201,162,39,0.06);border:1.5px solid rgba(201,162,39,0.3);border-radius:var(--radius);padding:14px;margin-bottom:10px;">
+          <div style="font-size:12px;color:var(--subtext);margin-bottom:10px;">Choose your amount:</div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <button id="top-btn-500" onclick="setTopAmount('fixed')" style="flex:1;padding:9px;background:rgba(201,162,39,0.15);border:1.5px solid var(--gold);color:var(--gold);border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;">$500</button>
+            <button id="top-btn-custom" onclick="setTopAmount('custom')" style="flex:1;padding:9px;background:var(--surface2);border:1.5px solid var(--border);color:var(--subtext);border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;">Custom</button>
+          </div>
+          <div id="top-custom-wrap" style="display:none;">
+            <div style="position:relative;">
+              <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--subtext);font-size:15px;">$</span>
+              <input id="top-custom-input" type="number" min="501" placeholder="Enter amount (min $501)"
+                style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:15px;font-weight:600;padding:10px 12px 10px 26px;outline:none;font-family:inherit;"
+                oninput="validateTopCustom()" />
+            </div>
+            <div id="top-custom-hint" style="font-size:11px;color:var(--subtext);margin-top:5px;">Amount must be greater than $500.</div>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+        <button class="cta" id="payin-pkg-cta" disabled onclick="goPayinV1Next()">Continue</button>
+
+        <!-- 🧪 Prototype: user state simulator -->
+        <div style="margin-top:12px;padding:10px 12px;background:rgba(201,162,39,0.05);border:1px dashed rgba(201,162,39,0.25);border-radius:var(--radius-sm);">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--subtext);margin-bottom:8px;">🧪 Simulate user state</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button onclick="setUserState('new')" id="state-btn-new" style="flex:1;min-width:90px;padding:6px 8px;background:rgba(201,162,39,0.15);border:1px solid var(--gold);color:var(--gold);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">New (unverified)</button>
+            <button onclick="setUserState('failed')" id="state-btn-failed" style="flex:1;min-width:90px;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--subtext);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">KYC Failed</button>
+            <button onclick="setUserState('resubmit')" id="state-btn-resubmit" style="flex:1;min-width:90px;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--subtext);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">Eligible Resubmit</button>
+            <button onclick="setUserState('returning')" id="state-btn-returning" style="flex:1;min-width:90px;padding:6px 8px;background:var(--surface2);border:1px solid var(--border);color:var(--subtext);border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">Returning (verified)</button>
+          </div>
+        </div>
+
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- Screen: Promo Selection -->
+    <div class="screen" id="screen-payin-v1-2">
+      <div class="nav-bar">
+        <button class="nav-back" onclick="goScreen('payin-v1-1')">←</button>
+        <div class="nav-title">Choose your bonus</div>
+      </div>
+      <div class="step-indicator">
+        <div class="step-dot done"></div>
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+      </div>
+      <div class="screen-body">
+        <div style="font-size:13px;color:var(--subtext);margin-bottom:18px;">Your $50 package comes with a bonus. Choose one:</div>
+
+        <div class="promo-option" onclick="selectPromo(this)">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="promo-venue">🏈 Sportsbook</div>
+              <div class="promo-amount">$50 Bracco Cash</div>
+              <div class="promo-rollover">3x rollover requirement</div>
+            </div>
+            <div class="radio" id="radio-1"></div>
+          </div>
+        </div>
+
+        <div class="promo-option" onclick="selectPromo(this)">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="promo-venue">🎰 Casino</div>
+              <div class="promo-amount">$50 Bracco Cash</div>
+              <div class="promo-rollover">3x rollover requirement</div>
+            </div>
+            <div class="radio" id="radio-2"></div>
+          </div>
+        </div>
+
+        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px;margin-top:8px;">
+          <div style="font-size:11px;color:var(--subtext);line-height:1.5;">Bonus Bracco Cash is subject to rollover requirements before withdrawal. Standard purchase funds are always available immediately.</div>
+        </div>
+
+        <div class="spacer"></div>
+        <button class="cta" id="promo-cta" disabled onclick="goPayinV1ToPayment()">Continue to Payment</button>
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- Screen: Breeze Iframe (Loading) -->
+    <div class="screen" id="screen-payin-v1-3">
+      <div class="nav-bar">
+        <button class="nav-back" onclick="goPayinV1Back()">←</button>
+        <div class="nav-title">Payment</div>
+      </div>
+      <div class="step-indicator">
+        <div class="step-dot done"></div>
+        <div class="step-dot done"></div>
+        <div class="step-dot done"></div>
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+      </div>
+
+      <div style="padding:0 20px 12px;">
+        <div class="result-card" style="margin-bottom:0;">
+          <div class="result-row">
+            <span class="result-row-label">Package</span>
+            <span class="result-row-value" id="summary-pkg">$50 Package</span>
+          </div>
+          <div class="result-row">
+            <span class="result-row-label">Amount</span>
+            <span class="result-row-value">$50.00</span>
+          </div>
+          <div class="result-row" id="summary-promo-row">
+            <span class="result-row-label">Bonus</span>
+            <span class="result-row-value" style="color:var(--gold)">Sportsbook — $50</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="iframe-placeholder">
+        <div class="iframe-logo">breeze</div>
+        <div class="loading-dots">
+          <div class="loading-dot"></div>
+          <div class="loading-dot"></div>
+          <div class="loading-dot"></div>
+        </div>
+        <div class="iframe-label">Secure payment powered by Breeze<br><span style="font-size:11px;color:#555;">PCI DSS compliant · TLS 1.2+</span></div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;justify-content:center;">
+          <button style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;" onclick="goScreen('payin-v1-4')">✓ Success</button>
+          <button style="background:var(--surface2);border:1px solid var(--border);color:var(--error);padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;" onclick="goScreen('payin-v1-5')">✗ Failed</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen: Payin Success -->
+    <div class="screen" id="screen-payin-v1-4">
+      <div class="nav-bar">
+        <div class="nav-title" style="text-align:center;width:100%;">Deposit Complete</div>
+      </div>
+      <div class="screen-body" style="justify-content:center;">
+        <div class="result-icon">✅</div>
+        <div class="result-title">You're ready to play!</div>
+        <div class="result-body">Your $50 deposit has been confirmed. Your Bracco Cash and Coins are now in your account — along with your Sportsbook bonus.</div>
+
+        <div class="result-card">
+          <div class="result-row">
+            <span class="result-row-label">Bracco Cash Added</span>
+            <span class="result-row-value" style="color:var(--success)">+$50.00</span>
+          </div>
+          <div class="result-row">
+            <span class="result-row-label">Coins Added</span>
+            <span class="result-row-value" style="color:var(--success)">+50,000</span>
+          </div>
+          <div class="result-row">
+            <span class="result-row-label">Bonus</span>
+            <span class="result-row-value" style="color:var(--gold)">$50 Sportsbook · 3x</span>
+          </div>
+          <div class="result-row">
+            <span class="result-row-label">Status</span>
+            <span class="result-row-value" style="color:var(--success)">Settled</span>
+          </div>
+        </div>
+
+        <div style="font-size:12px;color:var(--subtext);text-align:center;margin-bottom:20px;">A confirmation email has been sent to your registered address.</div>
+
+        <button class="cta" onclick="showFlow('account')">Go to My Account</button>
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- Screen: Payin Failure -->
+    <div class="screen" id="screen-payin-v1-5">
+      <div class="nav-bar">
+        <div class="nav-title" style="text-align:center;width:100%;">Payment Failed</div>
+      </div>
+      <div class="screen-body" style="justify-content:center;">
+        <div class="result-icon">❌</div>
+        <div class="result-title">Something went wrong</div>
+        <div class="result-body">Your payment couldn't be processed this time. No funds have been charged. This could be a temporary issue — please try again or use a different payment method.</div>
+
+        <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:24px;">
+          <div style="font-size:12px;color:var(--subtext);line-height:1.5;">If the problem persists, check that your card details are correct or contact your bank. Your account balance has not been affected.</div>
+        </div>
+
+        <button class="cta" onclick="goScreen('payin-v1-1')">Try Again</button>
+        <button class="cta-secondary" onclick="showFlow('account')">Back to Account</button>
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- Screen: SSN Collection (first-time purchaser) -->
+    <div class="screen" id="screen-payin-v1-ssn">
+      <div class="nav-bar">
+        <button class="nav-back" onclick="goPayinV1BackFromSSN()">←</button>
+        <div class="nav-title">Verify Identity</div>
+      </div>
+      <div class="step-indicator">
+        <div class="step-dot done"></div>
+        <div class="step-dot done"></div>
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+      </div>
+      <div class="screen-body">
+        <div style="text-align:center;font-size:40px;margin-bottom:16px;">🔒</div>
+        <div style="font-size:19px;font-weight:800;margin-bottom:10px;text-align:center;">One last step</div>
+        <div style="font-size:14px;color:var(--subtext);line-height:1.6;margin-bottom:24px;text-align:center;">We need the last 4 digits of your Social Security Number to verify your identity. This is a one-time check — you won't be asked again.</div>
+
+        <div class="section-label">Last 4 digits of SSN</div>
+        <input id="ssn-input" type="tel" maxlength="4" placeholder="••••"
+          style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:32px;font-weight:800;text-align:center;letter-spacing:12px;padding:16px;outline:none;font-family:inherit;margin-bottom:8px;"
+          oninput="validateSSN()" />
+        <div id="ssn-hint" style="font-size:12px;color:var(--subtext);margin-bottom:20px;text-align:center;">4 digits required</div>
+
+        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px;margin-bottom:20px;display:flex;gap:10px;align-items:flex-start;">
+          <span style="font-size:16px;flex-shrink:0;">🔐</span>
+          <div style="font-size:12px;color:var(--subtext);line-height:1.5;">Your information is encrypted and only used for identity verification. We do not store your full SSN.</div>
+        </div>
+
+        <div class="spacer"></div>
+        <button class="cta" id="ssn-cta" disabled onclick="goScreen('payin-v1-kyc')">Verify Identity</button>
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- Screen: KYC In-Progress -->
+    <div class="screen" id="screen-payin-v1-kyc">
+      <div class="nav-bar">
+        <div class="nav-title" style="text-align:center;width:100%;">Verifying Identity</div>
+      </div>
+      <div class="step-indicator">
+        <div class="step-dot done"></div>
+        <div class="step-dot done"></div>
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+      </div>
+      <div class="screen-body" style="align-items:center;">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px 20px 20px;">
+          <div id="kyc-anim" style="width:72px;height:72px;border-radius:50%;border:4px solid var(--surface2);border-top-color:var(--gold);animation:kycSpin 1s linear infinite;display:flex;align-items:center;justify-content:center;"></div>
+          <div id="kyc-status" style="font-size:16px;font-weight:700;text-align:center;line-height:1.5;">We're verifying your identity.<br><span style="font-size:13px;color:var(--subtext);font-weight:400;">This usually takes less than a minute.</span></div>
+        </div>
+
+        <div style="width:100%;padding-top:16px;border-top:1px solid var(--border);">
+          <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--subtext);margin-bottom:10px;text-align:center;">🧪 Simulate KYC result</div>
+          <div style="display:flex;gap:10px;padding:0 20px 20px;">
+            <button onclick="simulateKYCSuccess()" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">✓ Pass</button>
+            <button onclick="simulateKYCFail()" style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--error);padding:10px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">✗ Fail</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen: KYC Failure -->
+    <div class="screen" id="screen-payin-v1-kyc-fail">
+      <div class="nav-bar">
+        <div class="nav-title" style="text-align:center;width:100%;">Verification Failed</div>
+      </div>
+      <div class="screen-body" style="justify-content:center;padding-top:20px;">
+        <div class="result-icon">⚠️</div>
+        <div class="result-title" style="font-size:20px;">We couldn't verify your identity</div>
+        <div class="result-body">One of our team members is looking into it. Someone will reach out within the next 24 hours.</div>
+        <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:28px;">
+          <div style="font-size:12px;color:var(--subtext);line-height:1.5;">In the meantime, you can contact our support team if you have questions about your verification status.</div>
+        </div>
+        <button class="cta" onclick="showFlow('account')">Continue</button>
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- Screen: Deposit Pending Merchant Release (user-facing) -->
+    <div class="screen" id="screen-payout-v1-merchant-pending">
+      <div class="nav-bar">
+        <div class="nav-title" style="text-align:center;width:100%;">Redemption Under Review</div>
+      </div>
+      <div class="screen-body" style="justify-content:center;">
+        <div class="result-icon">🔍</div>
+        <div class="result-title">Your redemption is under review</div>
+        <div class="result-body">Our team is reviewing your redemption request. You'll receive an email once it's approved or if anything else is needed from you.</div>
+        <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:var(--radius-sm);padding:12px;margin-bottom:24px;">
+          <div style="font-size:12px;color:var(--subtext);line-height:1.5;">Reviews typically complete within a few hours. Your balance will reflect the outcome once a decision is made.</div>
+        </div>
+        <button class="cta" onclick="showFlow('account')">Back to Account</button>
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         PAYOUT V1 FLOW
+    ═══════════════════════════════════════════ -->
+
+    <!-- Screen: Payout — Amount Input -->
+    <div class="screen" id="screen-payout-v1-1">
+      <div class="nav-bar">
+        <button class="nav-back" onclick="showFlow('account')">←</button>
+        <div class="nav-title">Redeem</div>
+      </div>
+      <div class="step-indicator">
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+      </div>
+      <div class="screen-body">
+        <div class="balance-chip">
+          <div class="balance-label">Available to Redeem</div>
+          <div class="balance-amount">$247.50</div>
+        </div>
+
+        <div class="section-label">Enter redemption amount</div>
+
+        <div class="amount-input-wrap" id="payout-input-wrap" onclick="this.classList.add('focused')">
+          <span class="currency-sign">$</span>
+          <input class="amount-input" type="number" id="payout-amount" placeholder="0" min="20" oninput="validatePayout()" />
+        </div>
+        <div class="amount-hint" id="payout-hint">Minimum withdrawal: $20</div>
+
+        <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:20px;">
+          <div style="font-size:12px;color:var(--subtext);line-height:1.5;">Redemptions are processed by Breeze. You'll be asked to confirm your payout method and complete identity verification if needed.</div>
+        </div>
+
+        <div class="spacer"></div>
+        <button class="cta" id="payout-cta" disabled onclick="goScreen('payout-v1-2')">Continue</button>
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- Screen: Payout — Breeze iframe -->
+    <div class="screen" id="screen-payout-v1-2">
+      <div class="nav-bar">
+        <button class="nav-back" onclick="goScreen('payout-v1-1')">←</button>
+        <div class="nav-title">Confirm Redemption</div>
+      </div>
+      <div class="step-indicator">
+        <div class="step-dot done"></div>
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+      </div>
+
+      <div style="padding:0 20px 12px;">
+        <div class="result-card" style="margin-bottom:0;">
+          <div class="result-row">
+            <span class="result-row-label">Redemption Amount</span>
+            <span class="result-row-value">$<span id="payout-summary-amount">100</span>.00</span>
+          </div>
+          <div class="result-row">
+            <span class="result-row-label">Balance After</span>
+            <span class="result-row-value" style="color:var(--subtext)">$<span id="payout-balance-after">147</span>.50</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="iframe-placeholder">
+        <div class="iframe-logo">breeze</div>
+        <div class="loading-dots">
+          <div class="loading-dot"></div>
+          <div class="loading-dot"></div>
+          <div class="loading-dot"></div>
+        </div>
+        <div class="iframe-label">Select your payout method<br><span style="font-size:11px;color:#555;">ACH · Push-to-Card · Crypto</span></div>
+        <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;justify-content:center;">
+          <button style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;" onclick="goScreen('payout-v1-3')">✓ Simulate Success</button>
+          <button style="background:var(--surface2);border:1px solid var(--border);color:var(--warning);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;" onclick="goScreen('payout-v1-4')">⏳ Simulate Pending</button>
+          <button style="background:var(--surface2);border:1px solid var(--border);color:var(--error);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;" onclick="goScreen('payout-v1-5')">✗ Simulate Failure</button>
+          <button style="background:var(--surface2);border:1px solid var(--border);color:var(--warning);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;" onclick="goScreen('payout-v1-merchant-pending')">⏸ Pending Review</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen: Payout Success -->
+    <div class="screen" id="screen-payout-v1-3">
+      <div class="nav-bar">
+        <div class="nav-title" style="text-align:center;width:100%;">Redemption Complete</div>
+      </div>
+      <div class="screen-body" style="justify-content:center;">
+        <div class="result-icon">🎉</div>
+        <div class="result-title">Redemption complete</div>
+        <div class="result-body">Your redemption has been processed. You'll get an email once the funds land.</div>
+
+        <div class="result-card">
+          <div class="result-row">
+            <span class="result-row-label">Amount</span>
+            <span class="result-row-value">$<span id="payout-result-amount">100</span>.00</span>
+          </div>
+          <div class="result-row">
+            <span class="result-row-label">Method</span>
+            <span class="result-row-value">ACH Bank Transfer</span>
+          </div>
+          <div class="result-row">
+            <span class="result-row-label">Status</span>
+            <span class="result-row-value" style="color:var(--warning)">Pending</span>
+          </div>
+          <div class="result-row">
+            <span class="result-row-label">Est. Arrival</span>
+            <span class="result-row-value">1–3 business days</span>
+          </div>
+        </div>
+
+        <div style="font-size:12px;color:var(--subtext);text-align:center;margin-bottom:20px;">A confirmation email has been sent to your registered address.</div>
+
+        <button class="cta" onclick="showFlow('account')">Back to Account</button>
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- Screen: Payout Pending -->
+    <div class="screen" id="screen-payout-v1-4">
+      <div class="nav-bar">
+        <div class="nav-title" style="text-align:center;width:100%;">Redemption Pending</div>
+      </div>
+      <div class="screen-body" style="justify-content:center;">
+        <div class="result-icon">⏳</div>
+        <div class="result-title">Redemption on its way</div>
+        <div class="result-body">We'll email you when it lands.</div>
+
+        <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:24px;">
+          <div style="font-size:12px;color:var(--subtext);line-height:1.5;">Larger redemptions may require additional identity verification. Our team will reach out if more information is needed.</div>
+        </div>
+
+        <button class="cta" onclick="showFlow('account')">Back to Account</button>
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- Screen: Payout Failure -->
+    <div class="screen" id="screen-payout-v1-5">
+      <div class="nav-bar">
+        <div class="nav-title" style="text-align:center;width:100%;">Redemption Failed</div>
+      </div>
+      <div class="screen-body" style="justify-content:center;">
+        <div class="result-icon">❌</div>
+        <div class="result-title">Redemption couldn't be completed</div>
+        <div class="result-body">Something went wrong. Your Bracco Cash balance has been restored. Please try again or contact support if the issue continues.</div>
+
+        <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:24px;">
+          <div style="font-size:12px;color:var(--subtext);line-height:1.5;">Your funds have not been moved. Balance restored automatically.</div>
+        </div>
+
+        <button class="cta" onclick="goScreen('payout-v1-1')">Try Again</button>
+        <button class="cta-secondary" onclick="showFlow('account')">Back to Account</button>
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         PAYIN V2 FLOW
+    ═══════════════════════════════════════════ -->
+
+    <!-- Screen: V2 - Package Selection -->
+    <div class="screen" id="screen-payin-v2-1">
+      <div class="nav-bar">
+        <div class="nav-title">Select Package</div>
+        <div style="font-size:11px;background:rgba(96,165,250,0.1);color:var(--pending);padding:3px 8px;border-radius:6px;">V2</div>
+      </div>
+      <div class="step-indicator">
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+      </div>
+      <div class="screen-body">
+
+        <div class="package-card" onclick="selectPackageV2(this, false)">
+          <div class="package-top">
+            <div><div class="package-price">$10</div></div>
+          </div>
+          <div class="package-contents">
+            <div class="package-pill">
+              <span class="package-pill-label">Bracco Cash</span>
+              <span class="package-pill-value">$10</span>
+            </div>
+            <div class="package-pill">
+              <span class="package-pill-label">Coins</span>
+              <span class="package-pill-value">10,000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="package-card" onclick="selectPackageV2(this, false)">
+          <div class="package-top">
+            <div><div class="package-price">$25</div></div>
+          </div>
+          <div class="package-contents">
+            <div class="package-pill">
+              <span class="package-pill-label">Bracco Cash</span>
+              <span class="package-pill-value">$25</span>
+            </div>
+            <div class="package-pill">
+              <span class="package-pill-label">Coins</span>
+              <span class="package-pill-value">25,000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="package-card" onclick="selectPackageV2(this, true)">
+          <div class="package-top">
+            <div><div class="package-price">$50</div></div>
+            <span class="card-bonus-tag">+ Bonus</span>
+          </div>
+          <div class="package-contents">
+            <div class="package-pill">
+              <span class="package-pill-label">Bracco Cash</span>
+              <span class="package-pill-value">$50</span>
+            </div>
+            <div class="package-pill">
+              <span class="package-pill-label">Coins</span>
+              <span class="package-pill-value">50,000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="package-card" onclick="selectPackageV2(this, true)">
+          <div class="package-top">
+            <div><div class="package-price">$100</div></div>
+            <span class="card-bonus-tag">+ Bonus</span>
+          </div>
+          <div class="package-contents">
+            <div class="package-pill">
+              <span class="package-pill-label">Bracco Cash</span>
+              <span class="package-pill-value">$100</span>
+            </div>
+            <div class="package-pill">
+              <span class="package-pill-label">Coins</span>
+              <span class="package-pill-value">100,000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="package-card" onclick="selectPackageV2(this, true)">
+          <div class="package-top">
+            <div><div class="package-price">$250</div></div>
+            <span class="card-bonus-tag">+ Bonus</span>
+          </div>
+          <div class="package-contents">
+            <div class="package-pill">
+              <span class="package-pill-label">Bracco Cash</span>
+              <span class="package-pill-value">$250</span>
+            </div>
+            <div class="package-pill">
+              <span class="package-pill-label">Coins</span>
+              <span class="package-pill-value">250,000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="package-card" id="v2-pkg-500-card" onclick="selectPackageV2Top(this)">
+          <div class="package-top">
+            <div><div class="package-price">$500+</div></div>
+            <span class="card-bonus-tag">+ Bonus</span>
+          </div>
+          <div class="package-contents">
+            <div class="package-pill">
+              <span class="package-pill-label">Bracco Cash</span>
+              <span class="package-pill-value">$500+</span>
+            </div>
+            <div class="package-pill">
+              <span class="package-pill-label">Coins</span>
+              <span class="package-pill-value">500,000+</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- $500+ expand panel -->
+        <div id="v2-pkg-500-expand" style="display:none;background:rgba(201,162,39,0.06);border:1.5px solid rgba(201,162,39,0.3);border-radius:var(--radius);padding:14px;margin-bottom:10px;">
+          <div style="font-size:12px;color:var(--subtext);margin-bottom:10px;">Choose your amount:</div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <button id="v2-top-btn-500" onclick="setV2TopAmount('fixed')" style="flex:1;padding:9px;background:rgba(201,162,39,0.15);border:1.5px solid var(--gold);color:var(--gold);border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;">$500</button>
+            <button id="v2-top-btn-custom" onclick="setV2TopAmount('custom')" style="flex:1;padding:9px;background:var(--surface2);border:1.5px solid var(--border);color:var(--subtext);border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;">Custom</button>
+          </div>
+          <div id="v2-top-custom-wrap" style="display:none;">
+            <div style="position:relative;">
+              <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--subtext);font-size:15px;">$</span>
+              <input id="v2-top-custom-input" type="number" min="501" placeholder="Enter amount (min $501)"
+                style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:15px;font-weight:600;padding:10px 12px 10px 26px;outline:none;font-family:inherit;"
+                oninput="validateV2TopCustom()" />
+            </div>
+            <div id="v2-top-custom-hint" style="font-size:11px;color:var(--subtext);margin-top:5px;">Amount must be greater than $500.</div>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+        <button class="cta" id="v2-pkg-cta" disabled onclick="goV2PkgNext()">Continue</button>
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- Screen: V2 - Promo Selection -->
+    <div class="screen" id="screen-payin-v2-2">
+      <div class="nav-bar">
+        <button class="nav-back" onclick="goScreen('payin-v2-1')">←</button>
+        <div class="nav-title">Choose your bonus</div>
+      </div>
+      <div class="step-indicator">
+        <div class="step-dot done"></div>
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+      </div>
+      <div class="screen-body">
+        <div style="font-size:13px;color:var(--subtext);margin-bottom:18px;">Your $50 package comes with a bonus. Choose one:</div>
+
+        <div class="promo-option selected" onclick="selectPromoV2(this)">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="promo-venue">🏈 Sportsbook</div>
+              <div class="promo-amount">$50 Bracco Cash</div>
+              <div class="promo-rollover">3x rollover requirement</div>
+            </div>
+            <div class="radio checked"></div>
+          </div>
+        </div>
+
+        <div class="promo-option" onclick="selectPromoV2(this)">
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div class="promo-venue">🎰 Casino</div>
+              <div class="promo-amount">$50 Bracco Cash</div>
+              <div class="promo-rollover">3x rollover requirement</div>
+            </div>
+            <div class="radio"></div>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+        <button class="cta" onclick="goScreen('payin-v2-3')">Continue</button>
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- Screen: V2 - Payment Method Selection -->
+    <div class="screen" id="screen-payin-v2-3">
+      <div class="nav-bar">
+        <button class="nav-back" onclick="goScreen('payin-v2-2')">←</button>
+        <div class="nav-title">Payment Method</div>
+      </div>
+      <div class="step-indicator">
+        <div class="step-dot done"></div>
+        <div class="step-dot done"></div>
+        <div class="step-dot active"></div>
+        <div class="step-dot"></div>
+        <div class="step-dot"></div>
+      </div>
+      <div class="screen-body">
+        <div class="section-label">How would you like to pay?</div>
+
+        <div class="payment-method" onclick="goV2CardPayment()">
+          <div class="pm-icon" style="background:rgba(59,130,246,0.1);">💳</div>
+          <div class="pm-info">
+            <div class="pm-name">Credit / Debit Card</div>
+            <div class="pm-sub">Visa, Mastercard · Instant</div>
+          </div>
+          <div class="pm-arrow">›</div>
+        </div>
+
+        <div class="payment-method" onclick="goV2ACH()">
+          <div class="pm-icon" style="background:rgba(34,197,94,0.1);">🏦</div>
+          <div class="pm-info">
+            <div class="pm-name">ACH Bank Transfer</div>
+            <div class="pm-sub">Instant</div>
+          </div>
+          <div class="pm-arrow">›</div>
+        </div>
+
+        <div class="payment-method" onclick="goV2BankTransfer()">
+          <div class="pm-icon" style="background:rgba(201,162,39,0.1);">🏛️</div>
+          <div class="pm-info">
+            <div class="pm-name">Bank Transfer</div>
+            <div class="pm-sub">1–3 business days</div>
+          </div>
+          <div class="pm-arrow">›</div>
+        </div>
+
+        <div class="section-label" style="margin-top:16px;">Crypto</div>
+
+        <div class="payment-method" onclick="selectCrypto('USDC')">
+          <div class="pm-icon" style="background:rgba(59,130,246,0.1);">🔵</div>
+          <div class="pm-info">
+            <div class="pm-name">USDC</div>
+            <div class="pm-sub">USD Coin · Instant on-chain</div>
+          </div>
+          <div class="pm-arrow">›</div>
+        </div>
+
+        <div class="payment-method" onclick="selectCrypto('BTC')">
+          <div class="pm-icon" style="background:rgba(245,158,11,0.1);">₿</div>
+          <div class="pm-info">
+            <div class="pm-name">Bitcoin (BTC)</div>
+            <div class="pm-sub">~30 min confirmation</div>
+          </div>
+          <div class="pm-arrow">›</div>
+        </div>
+
+        <div class="payment-method" onclick="selectCrypto('ETH')">
+          <div class="pm-icon" style="background:rgba(139,92,246,0.1);">Ξ</div>
+          <div class="pm-info">
+            <div class="pm-name">Ethereum (ETH)</div>
+            <div class="pm-sub">~5 min confirmation</div>
+          </div>
+          <div class="pm-arrow">›</div>
+        </div>
+
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- Screen: V2 - Card / ACH (Breeze iframe) -->
+    <div class="screen" id="screen-payin-v2-4">
+      <div class="nav-bar">
+        <button class="nav-back" onclick="goScreen('payin-v2-3')">←</button>
+        <div class="nav-title" id="v2-breeze-title">Card Payment</div>
+      </div>
+      <div class="step-indicator">
+        <div class="step-dot done"></div><div class="step-dot done"></div><div class="step-dot done"></div><div class="step-dot active"></div><div class="step-dot"></div>
+      </div>
+      <div class="iframe-placeholder" style="margin:0 20px 20px;">
+        <div class="iframe-logo">breeze</div>
+        <div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>
+        <div class="iframe-label">Secure card payment via Breeze<br><span style="font-size:11px;color:#555;">PCI DSS compliant</span></div>
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <button style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;" onclick="goScreen('payin-v1-4')">✓ Simulate Success</button>
+          <button style="background:var(--surface2);border:1px solid var(--border);color:var(--error);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;" onclick="goScreen('payin-v1-5')">✗ Simulate Failure</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen: V2 - Bank Transfer -->
+    <div class="screen" id="screen-payin-v2-5">
+      <div class="nav-bar">
+        <button class="nav-back" onclick="goScreen('payin-v2-3')">←</button>
+        <div class="nav-title">Bank Transfer</div>
+      </div>
+      <div class="step-indicator">
+        <div class="step-dot done"></div><div class="step-dot done"></div><div class="step-dot done"></div><div class="step-dot active"></div><div class="step-dot"></div>
+      </div>
+      <div class="screen-body">
+        <div style="font-size:13px;color:var(--subtext);margin-bottom:16px;">Transfer exactly <strong style="color:var(--text)">$50.00</strong> using the details below. Include your reference code so we can match your payment.</div>
+
+        <div class="address-box" style="flex-direction:column;align-items:flex-start;gap:8px;">
+          <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+            <div>
+              <div style="font-size:10px;color:var(--subtext);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Bank Name</div>
+              <div style="font-size:14px;font-weight:600;">Chase Bank</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="address-box">
+          <div>
+            <div style="font-size:10px;color:var(--subtext);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Routing Number</div>
+            <div class="address-text">021000021</div>
+          </div>
+          <button class="copy-btn" onclick="copyText(this,'021000021')">Copy</button>
+        </div>
+
+        <div class="address-box">
+          <div>
+            <div style="font-size:10px;color:var(--subtext);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Account Number</div>
+            <div class="address-text">4872910564</div>
+          </div>
+          <button class="copy-btn" onclick="copyText(this,'4872910564')">Copy</button>
+        </div>
+
+        <div class="address-box" style="border-color:rgba(201,162,39,0.4);">
+          <div>
+            <div style="font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Reference Code (required)</div>
+            <div class="address-text" style="color:var(--gold);font-weight:700;">BRC-A7X9-2026</div>
+          </div>
+          <button class="copy-btn" onclick="copyText(this,'BRC-A7X9-2026')">Copy</button>
+        </div>
+
+        <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:var(--radius-sm);padding:12px;margin-top:4px;margin-bottom:20px;">
+          <div style="font-size:12px;color:var(--subtext);line-height:1.5;">⚠️ You must include the reference code or we won't be able to match your transfer. Funds typically arrive in 1–3 business days.</div>
+        </div>
+
+        <div class="spacer"></div>
+        <button class="cta" onclick="goV2Pending()">Done — I've sent the transfer</button>
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- Screen: V2 - Crypto -->
+    <div class="screen" id="screen-payin-v2-6">
+      <div class="nav-bar">
+        <button class="nav-back" onclick="goScreen('payin-v2-3')">←</button>
+        <div class="nav-title" id="crypto-screen-title">Send USDC</div>
+      </div>
+      <div class="step-indicator">
+        <div class="step-dot done"></div><div class="step-dot done"></div><div class="step-dot done"></div><div class="step-dot active"></div><div class="step-dot"></div>
+      </div>
+      <div class="screen-body">
+
+        <div style="font-size:13px;color:var(--subtext);text-align:center;margin-bottom:16px;">Send exactly <strong style="color:var(--text)">50.00 USDC</strong> to the address below</div>
+
+        <div class="qr-box">
+          <svg viewBox="0 0 100 100" width="128" height="128" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100" height="100" fill="white"/>
+            <!-- QR code pattern (decorative) -->
+            <rect x="5" y="5" width="35" height="35" rx="2" fill="none" stroke="black" stroke-width="4"/>
+            <rect x="13" y="13" width="19" height="19" fill="black"/>
+            <rect x="60" y="5" width="35" height="35" rx="2" fill="none" stroke="black" stroke-width="4"/>
+            <rect x="68" y="13" width="19" height="19" fill="black"/>
+            <rect x="5" y="60" width="35" height="35" rx="2" fill="none" stroke="black" stroke-width="4"/>
+            <rect x="13" y="68" width="19" height="19" fill="black"/>
+            <rect x="55" y="55" width="6" height="6" fill="black"/>
+            <rect x="63" y="55" width="6" height="6" fill="black"/>
+            <rect x="71" y="55" width="6" height="6" fill="black"/>
+            <rect x="79" y="55" width="6" height="6" fill="black"/>
+            <rect x="87" y="55" width="6" height="6" fill="black"/>
+            <rect x="55" y="63" width="6" height="6" fill="black"/>
+            <rect x="71" y="63" width="6" height="6" fill="black"/>
+            <rect x="87" y="63" width="6" height="6" fill="black"/>
+            <rect x="55" y="71" width="6" height="6" fill="black"/>
+            <rect x="63" y="71" width="6" height="6" fill="black"/>
+            <rect x="79" y="71" width="6" height="6" fill="black"/>
+            <rect x="55" y="79" width="6" height="6" fill="black"/>
+            <rect x="71" y="79" width="6" height="6" fill="black"/>
+            <rect x="87" y="79" width="6" height="6" fill="black"/>
+            <rect x="55" y="87" width="6" height="6" fill="black"/>
+            <rect x="63" y="87" width="6" height="6" fill="black"/>
+            <rect x="71" y="87" width="6" height="6" fill="black"/>
+            <rect x="79" y="87" width="6" height="6" fill="black"/>
+          </svg>
+        </div>
+
+        <div class="address-box">
+          <div>
+            <div style="font-size:10px;color:var(--subtext);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:2px;">Wallet Address (ERC-20)</div>
+            <div class="address-text">0x4A2b8c1D9f3E7a6B5C0d2F8e1A3b9C4D5e6F7g8</div>
+          </div>
+          <button class="copy-btn" onclick="copyText(this,'0x4A2b8c1D9f3E7a6B5C0d2F8e1A3b9C4D5e6F7g8')">Copy</button>
+        </div>
+
+        <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:var(--radius-sm);padding:10px;margin-bottom:16px;">
+          <div style="font-size:12px;color:var(--subtext);line-height:1.5;">⚠️ Only send USDC on the Ethereum network. Sending the wrong coin or using a different network will result in lost funds.</div>
+        </div>
+
+        <div class="spacer"></div>
+        <button class="cta" onclick="goV2Pending()">Done</button>
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- Screen: V2 - Async Pending -->
+    <div class="screen" id="screen-payin-v2-pending">
+      <div class="nav-bar">
+        <div class="nav-title" style="text-align:center;width:100%;">Transfer Initiated</div>
+      </div>
+      <div class="screen-body" style="justify-content:center;">
+        <div class="result-icon">⏳</div>
+        <div class="result-title">Waiting on your transfer</div>
+        <div class="result-body">We're watching for your payment. Once confirmed, your Bracco Cash and bonus will be credited automatically. You'll get an email when it lands.</div>
+
+        <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:var(--radius-sm);padding:12px;margin-bottom:24px;">
+          <div id="pending-estimate" style="font-size:12px;color:var(--subtext);line-height:1.5;">Usually within 1–3 business days.</div>
+        </div>
+
+        <button class="cta" onclick="showFlow('account')">Back to Account</button>
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         ACCOUNT / TRANSACTION HISTORY
+    ═══════════════════════════════════════════ -->
+
+    <div class="screen" id="screen-account-1">
+      <div class="nav-bar">
+        <div class="nav-title">My Account</div>
+      </div>
+      <div class="screen-body">
+        <!-- Balance widget -->
+        <div style="background:linear-gradient(135deg,#1A1A1A,#242424);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;text-align:center;">
+          <div style="font-size:11px;color:var(--subtext);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Bracco Cash Balance</div>
+          <div style="font-size:36px;font-weight:900;color:var(--gold);">$247.50</div>
+        </div>
+
+        <!-- Action buttons -->
+        <div style="display:flex;gap:10px;margin-bottom:20px;">
+          <button class="cta" style="flex:1;padding:12px;font-size:14px;" onclick="showFlow('payin-v1')">Purchase Coins</button>
+          <button style="flex:1;padding:12px;background:var(--surface);border:1.5px solid var(--border);color:var(--text);border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='var(--border)'" onclick="checkWithdrawEligibility()">Redeem</button>
+        </div>
+
+        <!-- Rollover progress (visible when active bonus) -->
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+            <span style="font-size:13px;font-weight:600;">Rollover Progress</span>
+            <span style="font-size:13px;color:var(--gold);">65%</span>
+          </div>
+          <div class="progress-bar-wrap"><div class="progress-bar"></div></div>
+          <div style="font-size:11px;color:var(--subtext);margin-top:6px;">$97.50 wagered of $150 required</div>
+        </div>
+
+        <!-- Transaction history -->
+        <div class="section-label">Transaction History</div>
+
+        <div class="tx-item">
+          <div class="tx-icon deposit">💰</div>
+          <div class="tx-info">
+            <div class="tx-name">$50 Deposit · Sportsbook</div>
+            <div class="tx-date">Apr 2, 2026</div>
+          </div>
+          <div class="tx-amount">
+            <div class="tx-amount-val">+$50</div>
+          </div>
+        </div>
+
+        <div class="tx-item">
+          <div class="tx-icon deposit">💰</div>
+          <div class="tx-info">
+            <div class="tx-name">ACH Deposit</div>
+            <div class="tx-date">Mar 30, 2026</div>
+          </div>
+          <div class="tx-amount">
+            <div class="tx-amount-val">+$100</div>
+          </div>
+        </div>
+
+        <div class="tx-item">
+          <div class="tx-icon deposit">💰</div>
+          <div class="tx-info">
+            <div class="tx-name">$10 Deposit</div>
+            <div class="tx-date">Mar 25, 2026</div>
+          </div>
+          <div class="tx-amount">
+            <div class="tx-amount-val">+$10</div>
+          </div>
+        </div>
+
+        <div class="tx-item">
+          <div class="tx-icon pending-tx">↑</div>
+          <div class="tx-info">
+            <div class="tx-name">Redemption</div>
+            <div class="tx-date">Mar 20, 2026</div>
+          </div>
+          <div class="tx-amount" style="text-align:right;">
+            <div class="tx-amount-val" style="color:var(--subtext)">−$75</div>
+            <div class="tx-date">Pending</div>
+          </div>
+        </div>
+
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         FLOWCHART
+    ═══════════════════════════════════════════ -->
+
+    <div class="screen" id="screen-flowchart-1">
+      <div class="nav-bar">
+        <div class="nav-title">User Flow Diagrams</div>
+      </div>
+      <div class="flowchart-outer">
+        <div class="flow-tabs-inner">
+          <div class="flow-tab-inner active" onclick="showFlowChart('payin')">V1 Payin</div>
+          <div class="flow-tab-inner" onclick="showFlowChart('payout')">V1 Payout</div>
+          <div class="flow-tab-inner" onclick="showFlowChart('v2payin')">V2 Payin</div>
+        </div>
+
+        <!-- V1 Payin flowchart -->
+        <div id="fc-payin" class="flow-diagram">
+          <div class="flow-node start">User taps "Purchase Coins"</div>
+          <div class="flow-arrow"><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node">Package Selection<br><span style="font-size:10px;color:var(--subtext);">SFTD / AFTD / Standard packages</span></div>
+          <div class="flow-arrow"><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node decision">Bonus package selected?</div>
+          <div style="display:flex;gap:20px;width:100%;justify-content:center;margin:4px 0;">
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+              <div style="font-size:10px;color:var(--success);font-weight:700;margin-bottom:4px;">YES</div>
+              <div class="flow-line"></div>
+              <div class="flow-arrow-head"></div>
+              <div class="flow-node" style="font-size:11px;">Promo Selection<br><span style="font-size:10px;color:var(--subtext)">Sportsbook or Casino</span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+              <div style="font-size:10px;color:var(--subtext);font-weight:700;margin-bottom:4px;">NO (pure purchase)</div>
+              <div class="flow-line"></div>
+              <div class="flow-arrow-head"></div>
+              <div class="flow-node" style="font-size:11px;opacity:0.5;">Skip promo step</div>
+            </div>
+          </div>
+          <div class="flow-arrow"><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node">Breeze Payment iframe<br><span style="font-size:10px;color:var(--subtext)">Amount pre-populated · PCI compliant</span></div>
+          <div class="flow-arrow"><div class="flow-label">Webhook response</div><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node decision">Transaction result?</div>
+          <div style="display:flex;gap:12px;width:100%;justify-content:center;margin:4px 0;">
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+              <div style="font-size:10px;color:var(--success);font-weight:700;margin-bottom:4px;">SUCCESS</div>
+              <div class="flow-line"></div>
+              <div class="flow-arrow-head"></div>
+              <div class="flow-node success-node" style="font-size:11px;">Success Screen<br>+ Award bonus</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+              <div style="font-size:10px;color:var(--error);font-weight:700;margin-bottom:4px;">FAILURE</div>
+              <div class="flow-line"></div>
+              <div class="flow-arrow-head"></div>
+              <div class="flow-node error-node" style="font-size:11px;">Failure Screen<br>"Try Again"</div>
+            </div>
+          </div>
+          <div class="flow-arrow"><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node">Email Notification Sent<br><span style="font-size:10px;color:var(--subtext)">via Customer.io</span></div>
+          <div class="flow-arrow"><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node success-node">Ledger entry created<br><span style="font-size:10px;">CC_DEPOSIT_CREDIT or ACH_DEPOSIT_CREDIT</span></div>
+        </div>
+
+        <!-- V1 Payout flowchart -->
+        <div id="fc-payout" class="flow-diagram" style="display:none;">
+          <div class="flow-node start">User taps "Redeem"</div>
+          <div class="flow-arrow"><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node decision">Rollover requirements cleared?</div>
+          <div style="display:flex;gap:20px;width:100%;justify-content:center;margin:4px 0;">
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+              <div style="font-size:10px;color:var(--error);font-weight:700;margin-bottom:4px;">NO</div>
+              <div class="flow-line"></div>
+              <div class="flow-arrow-head"></div>
+              <div class="flow-node error-node" style="font-size:11px;">Show inline error<br>+ rollover progress</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+              <div style="font-size:10px;color:var(--success);font-weight:700;margin-bottom:4px;">YES</div>
+              <div class="flow-line"></div>
+              <div class="flow-arrow-head"></div>
+              <div class="flow-node" style="font-size:11px;">Amount Input<br>Min $20</div>
+            </div>
+          </div>
+          <div class="flow-arrow"><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node">WITHDRAWAL_DEBIT created<br><span style="font-size:10px;color:var(--subtext)">Prevents double-spend</span></div>
+          <div class="flow-arrow"><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node">Breeze Payout iframe<br><span style="font-size:10px;color:var(--subtext)">User selects method + KYC</span></div>
+          <div class="flow-arrow"><div class="flow-label">Webhook response</div><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node decision">Payout result?</div>
+          <div style="display:flex;gap:8px;width:100%;justify-content:center;margin:4px 0;">
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+              <div style="font-size:10px;color:var(--success);font-weight:700;margin-bottom:4px;">PROCESSED</div>
+              <div class="flow-line"></div>
+              <div class="flow-arrow-head"></div>
+              <div class="flow-node success-node" style="font-size:10px;">Success Screen<br>"On its way"</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+              <div style="font-size:10px;color:var(--warning);font-weight:700;margin-bottom:4px;">PENDING</div>
+              <div class="flow-line"></div>
+              <div class="flow-arrow-head"></div>
+              <div class="flow-node pending-node" style="font-size:10px;">Pending Screen<br>"Under review"</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+              <div style="font-size:10px;color:var(--error);font-weight:700;margin-bottom:4px;">FAILED</div>
+              <div class="flow-line"></div>
+              <div class="flow-arrow-head"></div>
+              <div class="flow-node error-node" style="font-size:10px;">Failure Screen<br>Balance restored</div>
+            </div>
+          </div>
+          <div class="flow-arrow"><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node">Email Notification Sent</div>
+          <div class="flow-arrow"><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node">Transaction history updated<br><span style="font-size:10px;color:var(--subtext)">Pending / Processed / Failed</span></div>
+        </div>
+
+        <!-- V2 Payin flowchart -->
+        <div id="fc-v2payin" class="flow-diagram" style="display:none;">
+          <div class="flow-node start">Package + Promo Selected</div>
+          <div class="flow-arrow"><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node">Payment Method Selection<br><span style="font-size:10px;color:var(--subtext)">Orbis-owned screen</span></div>
+          <div class="flow-arrow"><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node decision">Selected method?</div>
+          <div style="display:flex;gap:6px;width:100%;justify-content:center;margin:4px 0;">
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+              <div style="font-size:9px;color:var(--pending);font-weight:700;margin-bottom:4px;">CARD</div>
+              <div class="flow-line"></div>
+              <div class="flow-arrow-head"></div>
+              <div class="flow-node" style="font-size:10px;">Breeze CC iframe<br>PCI compliant</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+              <div style="font-size:9px;color:var(--success);font-weight:700;margin-bottom:4px;">ACH</div>
+              <div class="flow-line"></div>
+              <div class="flow-arrow-head"></div>
+              <div class="flow-node" style="font-size:10px;">Bank details<br>+ ref code screen</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+              <div style="font-size:9px;color:var(--gold);font-weight:700;margin-bottom:4px;">CRYPTO</div>
+              <div class="flow-line"></div>
+              <div class="flow-arrow-head"></div>
+              <div class="flow-node" style="font-size:10px;">QR + wallet<br>address screen</div>
+            </div>
+          </div>
+          <div class="flow-arrow"><div class="flow-label">Card: immediate · Crypto/ACH: async</div><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node decision">Confirmation type?</div>
+          <div style="display:flex;gap:12px;width:100%;justify-content:center;margin:4px 0;">
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+              <div style="font-size:10px;color:var(--pending);font-weight:700;margin-bottom:4px;">SYNC (Card)</div>
+              <div class="flow-line"></div>
+              <div class="flow-arrow-head"></div>
+              <div class="flow-node success-node" style="font-size:10px;">Success / Failure screen</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
+              <div style="font-size:10px;color:var(--warning);font-weight:700;margin-bottom:4px;">ASYNC</div>
+              <div class="flow-line"></div>
+              <div class="flow-arrow-head"></div>
+              <div class="flow-node pending-node" style="font-size:10px;">Pending screen<br>+ email on confirm</div>
+            </div>
+          </div>
+          <div class="flow-arrow"><div class="flow-line"></div><div class="flow-arrow-head"></div></div>
+          <div class="flow-node">Provider routing:<br><span style="font-size:10px;color:var(--subtext)">Card/ACH → Breeze · Crypto → Fortris/Finvaro</span></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         ADMIN · PAM — PENDING MERCHANT RELEASE
+    ═══════════════════════════════════════════ -->
+
+    <div class="screen" id="screen-admin-1">
+      <div class="nav-bar">
+        <div class="nav-title">PAM · Pending Release</div>
+        <div style="font-size:10px;background:rgba(239,68,68,0.12);color:var(--error);padding:3px 8px;border-radius:6px;font-weight:700;">Admin</div>
+      </div>
+      <div class="screen-body">
+
+        <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:16px;">
+          <div style="font-size:12px;color:var(--subtext);line-height:1.5;">Transactions with Breeze webhook status <code style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:11px;">pending_merchant_release</code>. Approving or declining sends an email to the player.</div>
+        </div>
+
+        <!-- PAM transaction row — redemption -->
+        <div id="pam-tx-1" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <div>
+              <div style="font-size:13px;font-weight:700;">j.torres@email.com</div>
+              <div style="font-size:11px;color:var(--subtext);margin-top:2px;">Redemption · ACH · Apr 3, 2026 · 11:42 AM</div>
+              <div style="font-size:11px;color:var(--subtext);margin-top:2px;">Breeze TX: <span style="font-family:monospace;">BRZ-8X2K-1039</span></div>
+            </div>
+            <div style="font-size:18px;font-weight:800;color:var(--text);">−$100</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="pamAction('pam-tx-1','approved','j.torres@email.com','$100 redemption')" style="flex:1;padding:9px;background:rgba(34,197,94,0.1);border:1.5px solid rgba(34,197,94,0.3);color:var(--success);border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;">Approve</button>
+            <button onclick="pamAction('pam-tx-1','declined','j.torres@email.com','$100 redemption')" style="flex:1;padding:9px;background:rgba(239,68,68,0.08);border:1.5px solid rgba(239,68,68,0.25);color:var(--error);border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;">Decline</button>
+          </div>
+        </div>
+
+        <!-- PAM transaction row — redemption -->
+        <div id="pam-tx-2" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <div>
+              <div style="font-size:13px;font-weight:700;">m.chen@email.com</div>
+              <div style="font-size:11px;color:var(--subtext);margin-top:2px;">Redemption · ACH · Apr 3, 2026 · 10:15 AM</div>
+              <div style="font-size:11px;color:var(--subtext);margin-top:2px;">Breeze TX: <span style="font-family:monospace;">BRZ-5Y7R-2204</span></div>
+            </div>
+            <div style="font-size:18px;font-weight:800;color:var(--text);">−$250</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="pamAction('pam-tx-2','approved','m.chen@email.com','$250 redemption')" style="flex:1;padding:9px;background:rgba(34,197,94,0.1);border:1.5px solid rgba(34,197,94,0.3);color:var(--success);border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;">Approve</button>
+            <button onclick="pamAction('pam-tx-2','declined','m.chen@email.com','$250 redemption')" style="flex:1;padding:9px;background:rgba(239,68,68,0.08);border:1.5px solid rgba(239,68,68,0.25);color:var(--error);border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;">Decline</button>
+          </div>
+        </div>
+
+        <!-- PAM transaction row — redemption -->
+        <div id="pam-tx-3" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+            <div>
+              <div style="font-size:13px;font-weight:700;">r.patel@email.com</div>
+              <div style="font-size:11px;color:var(--subtext);margin-top:2px;">Redemption · Push-to-Card · Apr 2, 2026 · 9:30 PM</div>
+              <div style="font-size:11px;color:var(--subtext);margin-top:2px;">Breeze TX: <span style="font-family:monospace;">BRZ-3A9M-7761</span></div>
+            </div>
+            <div style="font-size:18px;font-weight:800;color:var(--text);">−$500</div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="pamAction('pam-tx-3','approved','r.patel@email.com','$500 redemption')" style="flex:1;padding:9px;background:rgba(34,197,94,0.1);border:1.5px solid rgba(34,197,94,0.3);color:var(--success);border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;">Approve</button>
+            <button onclick="pamAction('pam-tx-3','declined','r.patel@email.com','$500 redemption')" style="flex:1;padding:9px;background:rgba(239,68,68,0.08);border:1.5px solid rgba(239,68,68,0.25);color:var(--error);border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;">Decline</button>
+          </div>
+        </div>
+
+        <!-- Confirmation toast (hidden by default) -->
+        <div id="pam-toast" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-top:4px;">
+          <div id="pam-toast-text" style="font-size:13px;line-height:1.5;"></div>
+        </div>
+
+        <div class="bottom-pad"></div>
+      </div>
+    </div>
+
+  </div><!-- /phone-shell -->
+
+  <!-- Context note -->
+  <div style="max-width:375px;margin:16px auto 0;font-size:11px;color:#444;text-align:center;line-height:1.6;">
+    This prototype covers V1 (Payin + Payout) and V2 (Payment Method Orchestration).<br>
+    Breeze iframe screens are represented as placeholders. Backend handled by Linepros.
+  </div>
+</div>
+
+<script>
+// ── State ──
+let selectedHasBonus = false;
+let v1PayinStep = 1;
+let currentFlow = 'payin-v1';
+let v2PaymentMethod = 'ach'; // 'ach' | 'crypto'
+let v1TopMode = 'fixed'; // for $500+ expand: 'fixed' | 'custom'
+let v2TopMode = 'fixed';
+
+// ── Flow navigation ──
+function showFlow(flow) {
+  currentFlow = flow;
+  document.querySelectorAll('.flow-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.flow-tab').forEach((t, i) => {
+    const flows = ['payin-v1','payout-v1','payin-v2','account','admin','flowchart'];
+    if (flows[i] === flow) t.classList.add('active');
+  });
+
+  hideAllScreens();
+
+  if (flow === 'payin-v1') showScreen('payin-v1-1');
+  else if (flow === 'payout-v1') {
+    document.getElementById('payout-amount').value = '';
+    document.getElementById('payout-cta').disabled = true;
+    document.getElementById('payout-hint').textContent = 'Minimum withdrawal: $20';
+    document.getElementById('payout-hint').classList.remove('error');
+    showScreen('payout-v1-1');
+  }
+  else if (flow === 'payin-v2') showScreen('payin-v2-1');
+  else if (flow === 'account') showScreen('account-1');
+  else if (flow === 'admin') showScreen('admin-1');
+  else if (flow === 'flowchart') showScreen('flowchart-1');
+}
+
+function hideAllScreens() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
+}
+
+function showScreen(id) {
+  hideAllScreens();
+  const s = document.getElementById('screen-' + id);
+  if (s) s.classList.add('visible');
+}
+
+function goScreen(id) { showScreen(id); }
+
+// ── Package selection (V1) ──
+function selectPackage(el, hasBonus) {
+  // Clear all V1 package cards and hide expand
+  document.querySelectorAll('#screen-payin-v1-1 .package-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('pkg-500-expand').style.display = 'none';
+  el.classList.add('selected');
+  selectedHasBonus = hasBonus;
+  document.getElementById('payin-pkg-cta').disabled = false;
+}
+
+function selectPackageTop(el) {
+  // $500+ card selected in V1
+  document.querySelectorAll('#screen-payin-v1-1 .package-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedHasBonus = true;
+  document.getElementById('pkg-500-expand').style.display = 'block';
+  // Default to fixed $500 selected
+  setTopAmount('fixed');
+}
+
+function setTopAmount(mode) {
+  v1TopMode = mode;
+  const btn500 = document.getElementById('top-btn-500');
+  const btnCustom = document.getElementById('top-btn-custom');
+  const wrap = document.getElementById('top-custom-wrap');
+  if (mode === 'fixed') {
+    btn500.style.background = 'rgba(201,162,39,0.15)';
+    btn500.style.borderColor = 'var(--gold)';
+    btn500.style.color = 'var(--gold)';
+    btnCustom.style.background = 'var(--surface2)';
+    btnCustom.style.borderColor = 'var(--border)';
+    btnCustom.style.color = 'var(--subtext)';
+    wrap.style.display = 'none';
+    document.getElementById('payin-pkg-cta').disabled = false;
+  } else {
+    btnCustom.style.background = 'rgba(201,162,39,0.15)';
+    btnCustom.style.borderColor = 'var(--gold)';
+    btnCustom.style.color = 'var(--gold)';
+    btn500.style.background = 'var(--surface2)';
+    btn500.style.borderColor = 'var(--border)';
+    btn500.style.color = 'var(--subtext)';
+    wrap.style.display = 'block';
+    document.getElementById('payin-pkg-cta').disabled = true;
+  }
+}
+
+function validateTopCustom() {
+  const val = parseInt(document.getElementById('top-custom-input').value, 10);
+  const hint = document.getElementById('top-custom-hint');
+  const cta = document.getElementById('payin-pkg-cta');
+  if (!val || isNaN(val) || val <= 500) {
+    hint.textContent = 'Amount must be greater than $500.';
+    hint.style.color = 'var(--error)';
+    cta.disabled = true;
+  } else {
+    hint.textContent = `$${val.toLocaleString()} selected.`;
+    hint.style.color = 'var(--success)';
+    cta.disabled = false;
+  }
+}
+
+function goPayinV1Next() {
+  if (selectedHasBonus) showScreen('payin-v1-2');
+  else {
+    document.getElementById('summary-promo-row').style.display = 'none';
+    goPayinV1ToPayment();
+  }
+}
+
+function goPayinV1Back() {
+  if (selectedHasBonus) showScreen('payin-v1-2');
+  else showScreen('payin-v1-1');
+}
+
+// ── Promo selection ──
+function selectPromo(el) {
+  document.querySelectorAll('.promo-option').forEach(o => {
+    o.classList.remove('selected');
+    o.querySelector('.radio').classList.remove('checked');
+    o.querySelector('.radio').innerHTML = '';
+  });
+  el.classList.add('selected');
+  const radio = el.querySelector('.radio');
+  radio.classList.add('checked');
+  document.getElementById('promo-cta').disabled = false;
+}
+
+// ── Payout validation ──
+function validatePayout() {
+  const val = parseFloat(document.getElementById('payout-amount').value);
+  const hint = document.getElementById('payout-hint');
+  const cta = document.getElementById('payout-cta');
+  if (!val || isNaN(val)) {
+    hint.textContent = 'Minimum withdrawal: $20';
+    hint.classList.remove('error');
+    cta.disabled = true;
+  } else if (val < 20) {
+    hint.textContent = 'Minimum withdrawal amount is $20.';
+    hint.classList.add('error');
+    cta.disabled = true;
+  } else if (val > 247.50) {
+    hint.textContent = 'Amount exceeds your available balance of $247.50.';
+    hint.classList.add('error');
+    cta.disabled = true;
+  } else {
+    hint.textContent = `You'll receive $${val.toFixed(2)} in your bank account.`;
+    hint.classList.remove('error');
+    cta.disabled = false;
+    document.getElementById('payout-summary-amount').textContent = val.toFixed(0);
+    document.getElementById('payout-result-amount').textContent = val.toFixed(0);
+    document.getElementById('payout-balance-after').textContent = (247.50 - val).toFixed(2);
+  }
+}
+
+// ── Account page ──
+function checkWithdrawEligibility() {
+  // Simulate: show payout flow (rollover not yet cleared would show inline error)
+  showFlow('payout-v1');
+}
+
+// ── V2 helpers ──
+let v2SelectedHasBonus = false;
+
+function selectPackageV2(el, hasBonus) {
+  document.querySelectorAll('#screen-payin-v2-1 .package-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('v2-pkg-500-expand').style.display = 'none';
+  el.classList.add('selected');
+  v2SelectedHasBonus = hasBonus;
+  document.getElementById('v2-pkg-cta').disabled = false;
+}
+
+function goV2PkgNext() {
+  if (v2SelectedHasBonus) goScreen('payin-v2-2');
+  else goScreen('payin-v2-3');
+}
+
+function selectPackageV2Top(el) {
+  document.querySelectorAll('#screen-payin-v2-1 .package-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  v2SelectedHasBonus = true;
+  document.getElementById('v2-pkg-500-expand').style.display = 'block';
+  setV2TopAmount('fixed');
+}
+
+function setV2TopAmount(mode) {
+  v2TopMode = mode;
+  const btn500 = document.getElementById('v2-top-btn-500');
+  const btnCustom = document.getElementById('v2-top-btn-custom');
+  const wrap = document.getElementById('v2-top-custom-wrap');
+  if (mode === 'fixed') {
+    btn500.style.background = 'rgba(201,162,39,0.15)';
+    btn500.style.borderColor = 'var(--gold)';
+    btn500.style.color = 'var(--gold)';
+    btnCustom.style.background = 'var(--surface2)';
+    btnCustom.style.borderColor = 'var(--border)';
+    btnCustom.style.color = 'var(--subtext)';
+    wrap.style.display = 'none';
+    document.getElementById('v2-pkg-cta').disabled = false;
+  } else {
+    btnCustom.style.background = 'rgba(201,162,39,0.15)';
+    btnCustom.style.borderColor = 'var(--gold)';
+    btnCustom.style.color = 'var(--gold)';
+    btn500.style.background = 'var(--surface2)';
+    btn500.style.borderColor = 'var(--border)';
+    btn500.style.color = 'var(--subtext)';
+    wrap.style.display = 'block';
+    document.getElementById('v2-pkg-cta').disabled = true;
+  }
+}
+
+function validateV2TopCustom() {
+  const val = parseInt(document.getElementById('v2-top-custom-input').value, 10);
+  const hint = document.getElementById('v2-top-custom-hint');
+  const cta = document.getElementById('v2-pkg-cta');
+  if (!val || isNaN(val) || val <= 500) {
+    hint.textContent = 'Amount must be greater than $500.';
+    hint.style.color = 'var(--error)';
+    cta.disabled = true;
+  } else {
+    hint.textContent = `$${val.toLocaleString()} selected.`;
+    hint.style.color = 'var(--success)';
+    cta.disabled = false;
+  }
+}
+function selectPromoV2(el) {
+  document.querySelectorAll('#screen-payin-v2-2 .promo-option').forEach(o => {
+    o.classList.remove('selected');
+    o.querySelector('.radio').classList.remove('checked');
+    o.querySelector('.radio').innerHTML = '';
+  });
+  el.classList.add('selected');
+  const radio = el.querySelector('.radio');
+  radio.classList.add('checked');
+}
+function selectCrypto(coin) {
+  v2PaymentMethod = 'crypto';
+  document.getElementById('crypto-screen-title').textContent = 'Send ' + coin;
+  showScreen('payin-v2-6');
+}
+
+function goV2ACH() {
+  // ACH via Breeze — credited immediately, routes to Breeze iframe (same as card)
+  v2PaymentMethod = 'ach';
+  const title = document.getElementById('v2-breeze-title');
+  if (title) title.textContent = 'ACH Payment';
+  goScreen('payin-v2-4');
+}
+
+function goV2BankTransfer() {
+  // Manual bank wire — Orbis-owned screen, 1–3 business days
+  v2PaymentMethod = 'banktransfer';
+  goScreen('payin-v2-5');
+}
+
+function goV2CardPayment() {
+  // Card via Breeze — resets title if coming from ACH
+  v2PaymentMethod = 'card';
+  const title = document.getElementById('v2-breeze-title');
+  if (title) title.textContent = 'Card Payment';
+  goScreen('payin-v2-4');
+}
+
+function goV2Pending() {
+  // Only crypto and bank transfer are async — ACH is instant (no pending screen)
+  const el = document.getElementById('pending-estimate');
+  if (el) {
+    el.textContent = v2PaymentMethod === 'crypto'
+      ? 'Confirmations typically take 5–30 minutes. We\'ll email you once your funds arrive.'
+      : 'Bank transfers typically take 1–3 business days. We\'ll email you once your funds arrive.';
+  }
+  goScreen('payin-v2-pending');
+}
+
+// ── Copy button ──
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).catch(() => {});
+  const orig = btn.textContent;
+  btn.textContent = 'Copied!';
+  btn.style.color = 'var(--success)';
+  setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500);
+}
+
+// ── User KYC state ('unverified' | 'failed' | 'eligible_resubmit' | 'verified') ──
+let isFirstPurchaser = true;
+let kycStatus = 'unverified'; // drives re-entry routing (Screens 3, 3.1, 3.2)
+
+function setUserState(state) {
+  // Update button highlight
+  ['new','failed','resubmit','returning'].forEach(s => {
+    const btn = document.getElementById('state-btn-' + s);
+    if (!btn) return;
+    btn.style.background = 'var(--surface2)';
+    btn.style.borderColor = 'var(--border)';
+    btn.style.color = 'var(--subtext)';
+  });
+  const active = document.getElementById('state-btn-' + state);
+  if (active) {
+    active.style.background = 'rgba(201,162,39,0.15)';
+    active.style.borderColor = 'var(--gold)';
+    active.style.color = 'var(--gold)';
+  }
+  if (state === 'new') {
+    isFirstPurchaser = true;
+    kycStatus = 'unverified';
+  } else if (state === 'failed') {
+    isFirstPurchaser = true;
+    kycStatus = 'failed';
+  } else if (state === 'resubmit') {
+    isFirstPurchaser = true;
+    kycStatus = 'eligible_resubmit';
+  } else if (state === 'returning') {
+    isFirstPurchaser = false;
+    kycStatus = 'verified';
+  }
+}
+
+// ── SSN validation ──
+function validateSSN() {
+  const val = document.getElementById('ssn-input').value.replace(/\D/g, '');
+  const hint = document.getElementById('ssn-hint');
+  const cta = document.getElementById('ssn-cta');
+  if (val.length === 4) {
+    hint.textContent = 'Ready to verify.';
+    hint.style.color = 'var(--success)';
+    cta.disabled = false;
+  } else {
+    hint.textContent = '4 digits required';
+    hint.style.color = 'var(--subtext)';
+    cta.disabled = true;
+  }
+}
+
+// ── Route from promo CTA (or package for no-bonus) → SSN check or Breeze iframe ──
+// Re-entry logic (Screen 3.2 spec):
+//   kycStatus 'failed'            → user is still unverified; show Screen 3.2 again
+//   kycStatus 'eligible_resubmit' → eligible to resubmit; show SSN screen
+//   kycStatus 'unverified'        → first-time; show SSN screen
+//   kycStatus 'verified' / returning user → go straight to Breeze iframe
+function goPayinV1ToPayment() {
+  if (!isFirstPurchaser || kycStatus === 'verified') {
+    showScreen('payin-v1-3');
+    return;
+  }
+  if (kycStatus === 'failed') {
+    // Still unverified — surface Screen 3.2 again, not SSN input
+    showScreen('payin-v1-kyc-fail');
+    return;
+  }
+  // 'unverified' or 'eligible_resubmit' — collect SSN
+  document.getElementById('ssn-input').value = '';
+  document.getElementById('ssn-hint').textContent = '4 digits required';
+  document.getElementById('ssn-hint').style.color = 'var(--subtext)';
+  document.getElementById('ssn-cta').disabled = true;
+  showScreen('payin-v1-ssn');
+}
+
+// ── Back from SSN — return to promo or package depending on bonus state ──
+function goPayinV1BackFromSSN() {
+  if (selectedHasBonus) showScreen('payin-v1-2');
+  else showScreen('payin-v1-1');
+}
+
+// ── KYC animations ──
+function simulateKYCSuccess() {
+  const anim = document.getElementById('kyc-anim');
+  const status = document.getElementById('kyc-status');
+  // Stop spin, show checkmark
+  anim.style.animation = 'none';
+  anim.style.border = '4px solid var(--success)';
+  anim.style.background = 'rgba(34,197,94,0.1)';
+  anim.innerHTML = '<span style="font-size:32px;animation:kycPop 0.3s ease both;">✓</span>';
+  anim.style.color = 'var(--success)';
+  status.innerHTML = 'Identity verified!<br><span style="font-size:13px;color:var(--subtext);font-weight:400;">Continuing to payment…</span>';
+  // Auto-advance after 1.5s
+  setTimeout(() => {
+    kycStatus = 'verified';
+    isFirstPurchaser = false;
+    resetKYCScreen();
+    showScreen('payin-v1-3');
+  }, 1500);
+}
+
+function simulateKYCFail() {
+  kycStatus = 'failed';
+  resetKYCScreen();
+  showScreen('payin-v1-kyc-fail');
+}
+
+function resetKYCScreen() {
+  const anim = document.getElementById('kyc-anim');
+  const status = document.getElementById('kyc-status');
+  anim.style.animation = 'kycSpin 1s linear infinite';
+  anim.style.border = '4px solid var(--surface2)';
+  anim.style.borderTopColor = 'var(--gold)';
+  anim.style.background = '';
+  anim.innerHTML = '';
+  anim.style.color = '';
+  status.innerHTML = 'We\'re verifying your identity.<br><span style="font-size:13px;color:var(--subtext);font-weight:400;">This usually takes less than a minute.</span>';
+}
+
+// ── PAM actions ──
+function pamAction(txId, action, email, txDesc) {
+  const row = document.getElementById(txId);
+  if (row) {
+    row.style.opacity = '0.4';
+    row.style.pointerEvents = 'none';
+    const btns = row.querySelectorAll('button');
+    btns.forEach(b => b.disabled = true);
+  }
+  const toast = document.getElementById('pam-toast');
+  const toastText = document.getElementById('pam-toast-text');
+  const label = action === 'approved' ? 'Approved' : 'Declined';
+  const colour = action === 'approved' ? 'var(--success)' : 'var(--error)';
+  toastText.innerHTML = `<span style="color:${colour};font-weight:700;">${label}:</span> ${txDesc} — <span style="color:var(--subtext);">Notification sent to ${email}</span>`;
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 4000);
+}
+
+// ── Flowchart tabs ──
+function showFlowChart(which) {
+  document.querySelectorAll('.flow-tab-inner').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('fc-payin').style.display = 'none';
+  document.getElementById('fc-payout').style.display = 'none';
+  document.getElementById('fc-v2payin').style.display = 'none';
+  document.getElementById('fc-' + which).style.display = 'flex';
+}
+</script>
+</body>
+</html>
