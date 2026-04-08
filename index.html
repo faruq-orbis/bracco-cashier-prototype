@@ -590,14 +590,14 @@
             <span class="result-row-label">Transaction ID</span>
             <span style="display:flex;align-items:center;gap:8px;">
               <span class="result-row-value" style="font-family:monospace;font-size:12px;">TXN-2026-004821</span>
-              <button onclick="copyText(this,'TXN-2026-004821')" style="background:none;border:none;color:var(--gold);font-size:11px;font-weight:700;cursor:pointer;padding:0;">Copy</button>
+              <button onclick="copyText(this,'TXN-2026-004821')" data-copy-icon="true" title="Copy" style="background:none;border:none;color:var(--gold);cursor:pointer;padding:0;display:flex;align-items:center;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="9" y="2" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
             </span>
           </div>
           <div class="result-row" style="border-bottom:none;">
             <span class="result-row-label">Support</span>
             <span style="display:flex;align-items:center;gap:8px;">
               <span class="result-row-value" style="font-size:12px;">support@playbracco.com</span>
-              <button onclick="copyText(this,'support@playbracco.com')" style="background:none;border:none;color:var(--gold);font-size:11px;font-weight:700;cursor:pointer;padding:0;">Copy</button>
+              <button onclick="copyText(this,'support@playbracco.com')" data-copy-icon="true" title="Copy" style="background:none;border:none;color:var(--gold);cursor:pointer;padding:0;display:flex;align-items:center;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="9" y="2" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
             </span>
           </div>
         </div>
@@ -1894,12 +1894,22 @@ function goV2Pending() {
 }
 
 // ── Copy button ──
+const CLIPBOARD_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="9" y="2" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+const CHECK_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block"><polyline points="20 6 9 17 4 12"/></svg>`;
 function copyText(btn, text) {
   navigator.clipboard.writeText(text).catch(() => {});
-  const orig = btn.textContent;
-  btn.textContent = 'Copied!';
-  btn.style.color = 'var(--success)';
-  setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500);
+  const usesIcon = btn.dataset.copyIcon === 'true';
+  if (usesIcon) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = CHECK_ICON;
+    btn.style.color = 'var(--success)';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 1500);
+  } else {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.style.color = 'var(--success)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500);
+  }
 }
 
 // ── User KYC state ('unverified' | 'failed' | 'eligible_resubmit' | 'verified') ──
