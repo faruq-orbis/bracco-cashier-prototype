@@ -148,19 +148,18 @@
   .card-label { font-size: 11px; color: var(--subtext); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
   .card-amount { font-size: 26px; font-weight: 800; color: var(--text); }
   .card-sub { font-size: 12px; color: var(--subtext); margin-top: 4px; }
-  .card-bonus-tag { background: rgba(201,162,39,0.15); color: var(--gold); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 10px; white-space: nowrap; }
+  .card-bonus-tag { background: rgba(201,162,39,0.2); color: var(--gold); font-size: 10px; font-weight: 800; padding: 3px 7px; border-radius: 6px; white-space: nowrap; letter-spacing: 0.3px; }
   .popular-tag { background: rgba(96,165,250,0.15); color: var(--pending); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; margin-bottom: 8px; display: inline-block; }
 
   /* ── Package card ── */
-  .package-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; position: relative; }
+  .package-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .package-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 14px 14px 12px; cursor: pointer; transition: all 0.15s; position: relative; }
   .package-card:hover { border-color: var(--gold); }
   .package-card.selected { border-color: var(--gold); background: rgba(201,162,39,0.06); }
-  .package-top { display: flex; justify-content: space-between; align-items: flex-start; }
-  .package-price { font-size: 24px; font-weight: 800; }
-  .package-contents { display: flex; gap: 12px; margin-top: 10px; }
-  .package-pill { background: var(--surface2); border-radius: 8px; padding: 6px 10px; flex: 1; text-align: center; }
-  .package-pill-label { font-size: 10px; color: var(--subtext); display: block; }
-  .package-pill-value { font-size: 13px; font-weight: 700; display: block; margin-top: 2px; }
+  .package-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .package-price { font-size: 22px; font-weight: 800; line-height: 1; }
+  .package-price-usd { font-size: 11px; font-weight: 600; color: var(--subtext); margin-top: 2px; }
+  .package-stat { font-size: 12px; color: var(--subtext); line-height: 1.7; }
 
   /* ── Promo option ── */
   .promo-option { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; cursor: pointer; transition: all 0.15s; }
@@ -343,104 +342,60 @@
       </div>
       <div class="screen-body">
 
-        <div class="package-card" onclick="selectPackage(this, false)">
-          <div class="package-top">
-            <div><div class="package-price">$10</div></div>
-          </div>
-          <div class="package-contents">
-            <div class="package-pill">
-              <span class="package-pill-label">Bracco Cash</span>
-              <span class="package-pill-value">$10</span>
-            </div>
-            <div class="package-pill">
-              <span class="package-pill-label">Coins</span>
-              <span class="package-pill-value">10,000</span>
-            </div>
-          </div>
-        </div>
+        <div class="package-grid">
 
-        <div class="package-card" onclick="selectPackage(this, false)">
-          <div class="package-top">
-            <div><div class="package-price">$25</div></div>
-          </div>
-          <div class="package-contents">
-            <div class="package-pill">
-              <span class="package-pill-label">Bracco Cash</span>
-              <span class="package-pill-value">$25</span>
+          <div class="package-card" onclick="selectPackage(this, false)">
+            <div class="package-top">
+              <div><div class="package-price">$10</div><div class="package-price-usd">USD</div></div>
             </div>
-            <div class="package-pill">
-              <span class="package-pill-label">Coins</span>
-              <span class="package-pill-value">25,000</span>
-            </div>
+            <div class="package-stat">$10 Bracco Cash</div>
+            <div class="package-stat">10,000 Coins</div>
           </div>
-        </div>
 
-        <div class="package-card" onclick="selectPackage(this, true)">
-          <div class="package-top">
-            <div><div class="package-price">$50</div></div>
-            <span class="card-bonus-tag">+ Bonus</span>
-          </div>
-          <div class="package-contents">
-            <div class="package-pill">
-              <span class="package-pill-label">Bracco Cash</span>
-              <span class="package-pill-value">$50</span>
+          <div class="package-card" onclick="selectPackage(this, false)">
+            <div class="package-top">
+              <div><div class="package-price">$25</div><div class="package-price-usd">USD</div></div>
             </div>
-            <div class="package-pill">
-              <span class="package-pill-label">Coins</span>
-              <span class="package-pill-value">50,000</span>
-            </div>
+            <div class="package-stat">$25 Bracco Cash</div>
+            <div class="package-stat">25,000 Coins</div>
           </div>
-        </div>
 
-        <div class="package-card" onclick="selectPackage(this, true)">
-          <div class="package-top">
-            <div><div class="package-price">$100</div></div>
-            <span class="card-bonus-tag">+ Bonus</span>
-          </div>
-          <div class="package-contents">
-            <div class="package-pill">
-              <span class="package-pill-label">Bracco Cash</span>
-              <span class="package-pill-value">$100</span>
+          <div class="package-card" onclick="selectPackage(this, true)">
+            <div class="package-top">
+              <div><div class="package-price">$50</div><div class="package-price-usd">USD</div></div>
+              <span class="card-bonus-tag">+BONUS</span>
             </div>
-            <div class="package-pill">
-              <span class="package-pill-label">Coins</span>
-              <span class="package-pill-value">100,000</span>
-            </div>
+            <div class="package-stat">$50 Bracco Cash</div>
+            <div class="package-stat">50,000 Coins</div>
           </div>
-        </div>
 
-        <div class="package-card" onclick="selectPackage(this, true)">
-          <div class="package-top">
-            <div><div class="package-price">$250</div></div>
-            <span class="card-bonus-tag">+ Bonus</span>
-          </div>
-          <div class="package-contents">
-            <div class="package-pill">
-              <span class="package-pill-label">Bracco Cash</span>
-              <span class="package-pill-value">$250</span>
+          <div class="package-card" onclick="selectPackage(this, true)">
+            <div class="package-top">
+              <div><div class="package-price">$100</div><div class="package-price-usd">USD</div></div>
+              <span class="card-bonus-tag">+BONUS</span>
             </div>
-            <div class="package-pill">
-              <span class="package-pill-label">Coins</span>
-              <span class="package-pill-value">250,000</span>
-            </div>
+            <div class="package-stat">$100 Bracco Cash</div>
+            <div class="package-stat">100,000 Coins</div>
           </div>
-        </div>
 
-        <div class="package-card" id="pkg-500-card" onclick="selectPackageTop(this)">
-          <div class="package-top">
-            <div><div class="package-price">$500+</div></div>
-            <span class="card-bonus-tag">+ Bonus</span>
-          </div>
-          <div class="package-contents">
-            <div class="package-pill">
-              <span class="package-pill-label">Bracco Cash</span>
-              <span class="package-pill-value">$500+</span>
+          <div class="package-card" onclick="selectPackage(this, true)">
+            <div class="package-top">
+              <div><div class="package-price">$250</div><div class="package-price-usd">USD</div></div>
+              <span class="card-bonus-tag">+BONUS</span>
             </div>
-            <div class="package-pill">
-              <span class="package-pill-label">Coins</span>
-              <span class="package-pill-value">500,000+</span>
-            </div>
+            <div class="package-stat">$250 Bracco Cash</div>
+            <div class="package-stat">250,000 Coins</div>
           </div>
+
+          <div class="package-card" id="pkg-500-card" onclick="selectPackageTop(this)">
+            <div class="package-top">
+              <div><div class="package-price">$500+</div><div class="package-price-usd">USD</div></div>
+              <span class="card-bonus-tag">+BONUS</span>
+            </div>
+            <div class="package-stat">$500+ Bracco Cash</div>
+            <div class="package-stat">500,000+ Coins</div>
+          </div>
+
         </div>
 
         <!-- $500+ expand panel -->
@@ -901,104 +856,60 @@
       </div>
       <div class="screen-body">
 
-        <div class="package-card" onclick="selectPackageV2(this, false)">
-          <div class="package-top">
-            <div><div class="package-price">$10</div></div>
-          </div>
-          <div class="package-contents">
-            <div class="package-pill">
-              <span class="package-pill-label">Bracco Cash</span>
-              <span class="package-pill-value">$10</span>
-            </div>
-            <div class="package-pill">
-              <span class="package-pill-label">Coins</span>
-              <span class="package-pill-value">10,000</span>
-            </div>
-          </div>
-        </div>
+        <div class="package-grid">
 
-        <div class="package-card" onclick="selectPackageV2(this, false)">
-          <div class="package-top">
-            <div><div class="package-price">$25</div></div>
-          </div>
-          <div class="package-contents">
-            <div class="package-pill">
-              <span class="package-pill-label">Bracco Cash</span>
-              <span class="package-pill-value">$25</span>
+          <div class="package-card" onclick="selectPackageV2(this, false)">
+            <div class="package-top">
+              <div><div class="package-price">$10</div><div class="package-price-usd">USD</div></div>
             </div>
-            <div class="package-pill">
-              <span class="package-pill-label">Coins</span>
-              <span class="package-pill-value">25,000</span>
-            </div>
+            <div class="package-stat">$10 Bracco Cash</div>
+            <div class="package-stat">10,000 Coins</div>
           </div>
-        </div>
 
-        <div class="package-card" onclick="selectPackageV2(this, true)">
-          <div class="package-top">
-            <div><div class="package-price">$50</div></div>
-            <span class="card-bonus-tag">+ Bonus</span>
-          </div>
-          <div class="package-contents">
-            <div class="package-pill">
-              <span class="package-pill-label">Bracco Cash</span>
-              <span class="package-pill-value">$50</span>
+          <div class="package-card" onclick="selectPackageV2(this, false)">
+            <div class="package-top">
+              <div><div class="package-price">$25</div><div class="package-price-usd">USD</div></div>
             </div>
-            <div class="package-pill">
-              <span class="package-pill-label">Coins</span>
-              <span class="package-pill-value">50,000</span>
-            </div>
+            <div class="package-stat">$25 Bracco Cash</div>
+            <div class="package-stat">25,000 Coins</div>
           </div>
-        </div>
 
-        <div class="package-card" onclick="selectPackageV2(this, true)">
-          <div class="package-top">
-            <div><div class="package-price">$100</div></div>
-            <span class="card-bonus-tag">+ Bonus</span>
-          </div>
-          <div class="package-contents">
-            <div class="package-pill">
-              <span class="package-pill-label">Bracco Cash</span>
-              <span class="package-pill-value">$100</span>
+          <div class="package-card" onclick="selectPackageV2(this, true)">
+            <div class="package-top">
+              <div><div class="package-price">$50</div><div class="package-price-usd">USD</div></div>
+              <span class="card-bonus-tag">+BONUS</span>
             </div>
-            <div class="package-pill">
-              <span class="package-pill-label">Coins</span>
-              <span class="package-pill-value">100,000</span>
-            </div>
+            <div class="package-stat">$50 Bracco Cash</div>
+            <div class="package-stat">50,000 Coins</div>
           </div>
-        </div>
 
-        <div class="package-card" onclick="selectPackageV2(this, true)">
-          <div class="package-top">
-            <div><div class="package-price">$250</div></div>
-            <span class="card-bonus-tag">+ Bonus</span>
-          </div>
-          <div class="package-contents">
-            <div class="package-pill">
-              <span class="package-pill-label">Bracco Cash</span>
-              <span class="package-pill-value">$250</span>
+          <div class="package-card" onclick="selectPackageV2(this, true)">
+            <div class="package-top">
+              <div><div class="package-price">$100</div><div class="package-price-usd">USD</div></div>
+              <span class="card-bonus-tag">+BONUS</span>
             </div>
-            <div class="package-pill">
-              <span class="package-pill-label">Coins</span>
-              <span class="package-pill-value">250,000</span>
-            </div>
+            <div class="package-stat">$100 Bracco Cash</div>
+            <div class="package-stat">100,000 Coins</div>
           </div>
-        </div>
 
-        <div class="package-card" id="v2-pkg-500-card" onclick="selectPackageV2Top(this)">
-          <div class="package-top">
-            <div><div class="package-price">$500+</div></div>
-            <span class="card-bonus-tag">+ Bonus</span>
-          </div>
-          <div class="package-contents">
-            <div class="package-pill">
-              <span class="package-pill-label">Bracco Cash</span>
-              <span class="package-pill-value">$500+</span>
+          <div class="package-card" onclick="selectPackageV2(this, true)">
+            <div class="package-top">
+              <div><div class="package-price">$250</div><div class="package-price-usd">USD</div></div>
+              <span class="card-bonus-tag">+BONUS</span>
             </div>
-            <div class="package-pill">
-              <span class="package-pill-label">Coins</span>
-              <span class="package-pill-value">500,000+</span>
-            </div>
+            <div class="package-stat">$250 Bracco Cash</div>
+            <div class="package-stat">250,000 Coins</div>
           </div>
+
+          <div class="package-card" id="v2-pkg-500-card" onclick="selectPackageV2Top(this)">
+            <div class="package-top">
+              <div><div class="package-price">$500+</div><div class="package-price-usd">USD</div></div>
+              <span class="card-bonus-tag">+BONUS</span>
+            </div>
+            <div class="package-stat">$500+ Bracco Cash</div>
+            <div class="package-stat">500,000+ Coins</div>
+          </div>
+
         </div>
 
         <!-- $500+ expand panel -->
