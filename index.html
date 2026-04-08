@@ -158,7 +158,7 @@
   .package-card.selected { border-color: var(--gold); background: rgba(201,162,39,0.06); }
   .package-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
   .package-price { font-size: 22px; font-weight: 800; line-height: 1; }
-  .package-price-usd { font-size: 11px; font-weight: 600; color: var(--subtext); margin-top: 2px; }
+  .package-price-usd { display: none; }
   .package-stat { font-size: 12px; color: var(--subtext); line-height: 1.7; }
 
   /* ── Promo option ── */
@@ -412,7 +412,14 @@
                 style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:15px;font-weight:600;padding:10px 12px 10px 26px;outline:none;font-family:inherit;"
                 oninput="validateTopCustom()" />
             </div>
-            <div id="top-custom-hint" style="font-size:11px;color:var(--subtext);margin-top:5px;">Amount must be greater than $500.</div>
+            <div id="top-custom-hint" style="font-size:11px;color:var(--subtext);margin-top:5px;">Enter an amount between $501 and $5,000.</div>
+            <div id="top-custom-preview" style="display:none;margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;">
+              <div style="font-size:11px;color:var(--subtext);">You'll receive</div>
+              <div style="display:flex;justify-content:space-between;margin-top:6px;">
+                <span style="font-size:13px;font-weight:700;" id="top-preview-bc">— Bracco Cash</span>
+                <span style="font-size:13px;font-weight:700;" id="top-preview-coins">— Coins</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -551,9 +558,12 @@
             <span class="result-row-label">Bonus</span>
             <span class="result-row-value" style="color:var(--gold)">$50 Sportsbook · 3x</span>
           </div>
-          <div class="result-row">
-            <span class="result-row-label">Status</span>
-            <span class="result-row-value" style="color:var(--success)">Settled</span>
+          <div class="result-row" style="border-bottom:none;">
+            <span class="result-row-label">Transaction ID</span>
+            <span style="display:flex;align-items:center;gap:8px;">
+              <span class="result-row-value" style="font-family:monospace;font-size:12px;">TXN-2026-004820</span>
+              <button onclick="copyText(this,'TXN-2026-004820')" style="background:none;border:none;color:var(--gold);font-size:11px;font-weight:700;cursor:pointer;padding:0;">Copy</button>
+            </span>
           </div>
         </div>
 
@@ -571,11 +581,25 @@
       </div>
       <div class="screen-body" style="justify-content:center;">
         <div class="result-icon">❌</div>
-        <div class="result-title">Something went wrong</div>
-        <div class="result-body">Your payment couldn't be processed this time. No funds have been charged. This could be a temporary issue — please try again or use a different payment method.</div>
+        <div class="result-title">Payment failed</div>
+        <!-- failureReason from Breeze webhook -->
+        <div class="result-body" style="margin-bottom:20px;">Your card was declined by the issuing bank. Please contact your bank or try a different payment method.</div>
 
-        <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:24px;">
-          <div style="font-size:12px;color:var(--subtext);line-height:1.5;">If the problem persists, check that your card details are correct or contact your bank. Your account balance has not been affected.</div>
+        <div class="result-card" style="margin-bottom:20px;">
+          <div class="result-row">
+            <span class="result-row-label">Transaction ID</span>
+            <span style="display:flex;align-items:center;gap:8px;">
+              <span class="result-row-value" style="font-family:monospace;font-size:12px;">TXN-2026-004821</span>
+              <button onclick="copyText(this,'TXN-2026-004821')" style="background:none;border:none;color:var(--gold);font-size:11px;font-weight:700;cursor:pointer;padding:0;">Copy</button>
+            </span>
+          </div>
+          <div class="result-row" style="border-bottom:none;">
+            <span class="result-row-label">Support</span>
+            <span style="display:flex;align-items:center;gap:8px;">
+              <span class="result-row-value" style="font-size:12px;">support@playbracco.com</span>
+              <button onclick="copyText(this,'support@playbracco.com')" style="background:none;border:none;color:var(--gold);font-size:11px;font-weight:700;cursor:pointer;padding:0;">Copy</button>
+            </span>
+          </div>
         </div>
 
         <button class="cta" onclick="goScreen('payin-v1-1')">Try Again</button>
@@ -704,11 +728,14 @@
 
         <div class="section-label">Enter redemption amount</div>
 
-        <div class="amount-input-wrap" id="payout-input-wrap" onclick="this.classList.add('focused')">
-          <span class="currency-sign">$</span>
-          <input class="amount-input" type="number" id="payout-amount" placeholder="0" min="20" oninput="validatePayout()" />
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <div class="amount-input-wrap" id="payout-input-wrap" onclick="this.classList.add('focused')" style="flex:1;margin-bottom:0;">
+            <span class="currency-sign">$</span>
+            <input class="amount-input" type="number" id="payout-amount" placeholder="0" min="20" oninput="validatePayout()" />
+          </div>
+          <button onclick="setMaxPayout()" style="padding:0 16px;height:56px;background:var(--surface2);border:1.5px solid var(--border);color:var(--text);border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">Max</button>
         </div>
-        <div class="amount-hint" id="payout-hint">Minimum withdrawal: $20</div>
+        <div class="amount-hint" id="payout-hint">Min $20 · Max $100</div>
 
         <div style="background:var(--surface2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:20px;">
           <div style="font-size:12px;color:var(--subtext);line-height:1.5;">Redemptions are processed by Breeze. You'll be asked to confirm your payout method and complete identity verification if needed.</div>
@@ -782,12 +809,15 @@
             <span class="result-row-value">ACH Bank Transfer</span>
           </div>
           <div class="result-row">
-            <span class="result-row-label">Status</span>
-            <span class="result-row-value" style="color:var(--warning)">Pending</span>
-          </div>
-          <div class="result-row">
             <span class="result-row-label">Est. Arrival</span>
             <span class="result-row-value">1–3 business days</span>
+          </div>
+          <div class="result-row" style="border-bottom:none;">
+            <span class="result-row-label">Transaction ID</span>
+            <span style="display:flex;align-items:center;gap:8px;">
+              <span class="result-row-value" style="font-family:monospace;font-size:12px;">TXN-2026-008812</span>
+              <button onclick="copyText(this,'TXN-2026-008812')" style="background:none;border:none;color:var(--gold);font-size:11px;font-weight:700;cursor:pointer;padding:0;">Copy</button>
+            </span>
           </div>
         </div>
 
@@ -807,6 +837,16 @@
         <div class="result-icon">⏳</div>
         <div class="result-title">Redemption on its way</div>
         <div class="result-body">We'll email you when it lands.</div>
+
+        <div class="result-card" style="margin-bottom:16px;">
+          <div class="result-row" style="border-bottom:none;">
+            <span class="result-row-label">Transaction ID</span>
+            <span style="display:flex;align-items:center;gap:8px;">
+              <span class="result-row-value" style="font-family:monospace;font-size:12px;">TXN-2026-008813</span>
+              <button onclick="copyText(this,'TXN-2026-008813')" style="background:none;border:none;color:var(--gold);font-size:11px;font-weight:700;cursor:pointer;padding:0;">Copy</button>
+            </span>
+          </div>
+        </div>
 
         <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:24px;">
           <div style="font-size:12px;color:var(--subtext);line-height:1.5;">Larger redemptions may require additional identity verification. Our team will reach out if more information is needed.</div>
@@ -926,7 +966,14 @@
                 style="width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:15px;font-weight:600;padding:10px 12px 10px 26px;outline:none;font-family:inherit;"
                 oninput="validateV2TopCustom()" />
             </div>
-            <div id="v2-top-custom-hint" style="font-size:11px;color:var(--subtext);margin-top:5px;">Amount must be greater than $500.</div>
+            <div id="v2-top-custom-hint" style="font-size:11px;color:var(--subtext);margin-top:5px;">Enter an amount between $501 and $5,000.</div>
+            <div id="v2-top-custom-preview" style="display:none;margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;">
+              <div style="font-size:11px;color:var(--subtext);">You'll receive</div>
+              <div style="display:flex;justify-content:space-between;margin-top:6px;">
+                <span style="font-size:13px;font-weight:700;" id="v2-top-preview-bc">— Bracco Cash</span>
+                <span style="font-size:13px;font-weight:700;" id="v2-top-preview-coins">— Coins</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1477,7 +1524,7 @@
             <div>
               <div style="font-size:13px;font-weight:700;">j.torres@email.com</div>
               <div style="font-size:11px;color:var(--subtext);margin-top:2px;">Redemption · ACH · Apr 3, 2026 · 11:42 AM</div>
-              <div style="font-size:11px;color:var(--subtext);margin-top:2px;">Breeze TX: <span style="font-family:monospace;">BRZ-8X2K-1039</span></div>
+              <div style="font-size:11px;color:var(--subtext);margin-top:2px;">TX: <span style="font-family:monospace;">TXN-2026-008801</span> &nbsp;·&nbsp; Breeze: <span style="font-family:monospace;">BRZ-8X2K-1039</span></div>
             </div>
             <div style="font-size:18px;font-weight:800;color:var(--text);">−$100</div>
           </div>
@@ -1493,7 +1540,7 @@
             <div>
               <div style="font-size:13px;font-weight:700;">m.chen@email.com</div>
               <div style="font-size:11px;color:var(--subtext);margin-top:2px;">Redemption · ACH · Apr 3, 2026 · 10:15 AM</div>
-              <div style="font-size:11px;color:var(--subtext);margin-top:2px;">Breeze TX: <span style="font-family:monospace;">BRZ-5Y7R-2204</span></div>
+              <div style="font-size:11px;color:var(--subtext);margin-top:2px;">TX: TXN-2026-008802 &nbsp;·&nbsp; Breeze: <span style="font-family:monospace;">BRZ-5Y7R-2204</span></div>
             </div>
             <div style="font-size:18px;font-weight:800;color:var(--text);">−$250</div>
           </div>
@@ -1509,7 +1556,7 @@
             <div>
               <div style="font-size:13px;font-weight:700;">r.patel@email.com</div>
               <div style="font-size:11px;color:var(--subtext);margin-top:2px;">Redemption · Push-to-Card · Apr 2, 2026 · 9:30 PM</div>
-              <div style="font-size:11px;color:var(--subtext);margin-top:2px;">Breeze TX: <span style="font-family:monospace;">BRZ-3A9M-7761</span></div>
+              <div style="font-size:11px;color:var(--subtext);margin-top:2px;">TX: TXN-2026-008803 &nbsp;·&nbsp; Breeze: <span style="font-family:monospace;">BRZ-3A9M-7761</span></div>
             </div>
             <div style="font-size:18px;font-weight:800;color:var(--text);">−$500</div>
           </div>
@@ -1632,14 +1679,23 @@ function setTopAmount(mode) {
 function validateTopCustom() {
   const val = parseInt(document.getElementById('top-custom-input').value, 10);
   const hint = document.getElementById('top-custom-hint');
+  const preview = document.getElementById('top-custom-preview');
   const cta = document.getElementById('payin-pkg-cta');
   if (!val || isNaN(val) || val <= 500) {
-    hint.textContent = 'Amount must be greater than $500.';
+    hint.textContent = 'Enter an amount between $501 and $5,000.';
     hint.style.color = 'var(--error)';
+    preview.style.display = 'none';
+    cta.disabled = true;
+  } else if (val > 5000) {
+    hint.textContent = 'Maximum purchase amount is $5,000.';
+    hint.style.color = 'var(--error)';
+    preview.style.display = 'none';
     cta.disabled = true;
   } else {
-    hint.textContent = `$${val.toLocaleString()} selected.`;
-    hint.style.color = 'var(--success)';
+    hint.textContent = '';
+    preview.style.display = 'block';
+    document.getElementById('top-preview-bc').textContent = `$${val.toLocaleString()} Bracco Cash`;
+    document.getElementById('top-preview-coins').textContent = `${(val * 1000).toLocaleString()} Coins`;
     cta.disabled = false;
   }
 }
@@ -1671,30 +1727,42 @@ function selectPromo(el) {
 }
 
 // ── Payout validation ──
+const PAYOUT_MAX = 100;    // prototype cap
+const PAYOUT_BALANCE = 247.50;
 function validatePayout() {
   const val = parseFloat(document.getElementById('payout-amount').value);
   const hint = document.getElementById('payout-hint');
   const cta = document.getElementById('payout-cta');
   if (!val || isNaN(val)) {
-    hint.textContent = 'Minimum withdrawal: $20';
+    hint.textContent = 'Min $20 · Max $100';
     hint.classList.remove('error');
     cta.disabled = true;
   } else if (val < 20) {
-    hint.textContent = 'Minimum withdrawal amount is $20.';
+    hint.textContent = 'Minimum redemption amount is $20.';
     hint.classList.add('error');
     cta.disabled = true;
-  } else if (val > 247.50) {
-    hint.textContent = 'Amount exceeds your available balance of $247.50.';
+  } else if (val > PAYOUT_BALANCE) {
+    hint.textContent = `Amount exceeds your available balance of $${PAYOUT_BALANCE.toFixed(2)}.`;
+    hint.classList.add('error');
+    cta.disabled = true;
+  } else if (val > PAYOUT_MAX) {
+    hint.textContent = `Maximum redemption is $${PAYOUT_MAX}. Contact support for larger amounts.`;
     hint.classList.add('error');
     cta.disabled = true;
   } else {
-    hint.textContent = `You'll receive $${val.toFixed(2)} in your bank account.`;
+    hint.textContent = '';
     hint.classList.remove('error');
     cta.disabled = false;
     document.getElementById('payout-summary-amount').textContent = val.toFixed(0);
     document.getElementById('payout-result-amount').textContent = val.toFixed(0);
-    document.getElementById('payout-balance-after').textContent = (247.50 - val).toFixed(2);
+    document.getElementById('payout-balance-after').textContent = (PAYOUT_BALANCE - val).toFixed(2);
   }
+}
+
+function setMaxPayout() {
+  const max = Math.min(PAYOUT_MAX, PAYOUT_BALANCE);
+  document.getElementById('payout-amount').value = max;
+  validatePayout();
 }
 
 // ── Account page ──
@@ -1756,14 +1824,23 @@ function setV2TopAmount(mode) {
 function validateV2TopCustom() {
   const val = parseInt(document.getElementById('v2-top-custom-input').value, 10);
   const hint = document.getElementById('v2-top-custom-hint');
+  const preview = document.getElementById('v2-top-custom-preview');
   const cta = document.getElementById('v2-pkg-cta');
   if (!val || isNaN(val) || val <= 500) {
-    hint.textContent = 'Amount must be greater than $500.';
+    hint.textContent = 'Enter an amount between $501 and $5,000.';
     hint.style.color = 'var(--error)';
+    preview.style.display = 'none';
+    cta.disabled = true;
+  } else if (val > 5000) {
+    hint.textContent = 'Maximum purchase amount is $5,000.';
+    hint.style.color = 'var(--error)';
+    preview.style.display = 'none';
     cta.disabled = true;
   } else {
-    hint.textContent = `$${val.toLocaleString()} selected.`;
-    hint.style.color = 'var(--success)';
+    hint.textContent = '';
+    preview.style.display = 'block';
+    document.getElementById('v2-top-preview-bc').textContent = `$${val.toLocaleString()} Bracco Cash`;
+    document.getElementById('v2-top-preview-coins').textContent = `${(val * 1000).toLocaleString()} Coins`;
     cta.disabled = false;
   }
 }
